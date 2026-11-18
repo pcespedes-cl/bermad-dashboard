@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv/
+
+# Archivos locales / sensibles
+*.zip
+*.log
+serve.log
+
+# macOS
+.DS_Store

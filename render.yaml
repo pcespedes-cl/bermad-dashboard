@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: bermad-dashboard
+    env: python
+    buildCommand: ""
+    startCommand: python serve.py
+    envVars:
+      - key: PORT
+        value: 8765
+      - key: BERMAD_API_KEY
+        sync: false
+      - key: BERMAD_PROJECT_ID
+        value: f09f3f01c034ad82ac311fdb3e47e391
+      - key: BERMAD_UNIT_ID
+        value: dcc38574-e6b8-454e-b3f3-36b1c3924264

@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bermad Cloud - Gráfica de Flujo (Escala 24 Horas)</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    :root {
+      --primary: #0284c7;
+      --card-bg: #ffffff;
+      --border-color: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --bg-page: #f8fafc;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --card-bg: #1e293b;
+        --border-color: #334155;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+        --bg-page: #0f172a;
+      }
+    }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+    .led-online {
+      background-color: #10b981;
+      box-shadow: 0 0 8px #10b981, 0 0 16px rgba(16, 185, 129, 0.7);
+    }
+    .led-offline {
+      background-color: #ef4444;
+      box-shadow: 0 0 8px #ef4444, 0 0 16px rgba(239, 68, 68, 0.7);
+    }
+    .led-connecting {
+      background-color: #f59e0b;
+      box-shadow: 0 0 8px #f59e0b, 0 0 16px rgba(245, 158, 11, 0.7);
+    }
+  </style>
+</head>
+<body class="bg-[var(--bg-page)] text-[var(--text-main)] min-h-screen p-4 md:p-6 font-sans antialiased">
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Notificación Toast Flotante -->
+    <div id="toastNotification" class="fixed top-5 right-5 z-50 hidden max-w-md bg-emerald-600 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-3 transition-all transform duration-300">
+      <span class="text-xl">📥</span>
+      <div class="text-xs">
+        <p class="font-bold" id="toastTitle">Descarga completada</p>
+        <p class="text-emerald-100" id="toastMsg">Guardado en carpeta Descargas (~/Downloads)</p>
+      </div>
+      <button onclick="document.getElementById('toastNotification').classList.add('hidden')" class="ml-auto text-emerald-200 hover:text-white">✕</button>
+    </div>
+
+    <!-- Header Principal -->
+    <header class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-600 font-bold text-2xl">
+          💧
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl md:text-2xl font-bold tracking-tight">BERMAD Cloud · Monitor de Flujo (24 Horas)</h1>
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300">
+              ⏱️ Escala fija: 24 hrs
+            </span>
+          </div>
+          <p class="text-xs md:text-sm text-[var(--text-muted)] mt-0.5">
+            Dispositivo: <strong class="text-[var(--text-main)]">DEMO SPENCE 3</strong> · 
+            UID: <code class="font-mono text-blue-600 dark:text-blue-400">dcc38574-e6b8-454e-b3f3-36b1c3924264</code>
+          </p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2 w-full md:w-auto">
+        <button id="btnFetchApi" class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition flex items-center gap-2 relative">
+          <!-- Marcador lumínico de estado -->
+          <span class="relative flex h-2.5 w-2.5 items-center justify-center">
+            <span id="apiLedPing" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span id="apiLedDot" class="relative inline-flex rounded-full h-2.5 w-2.5 led-online"></span>
+          </span>
+          <span id="apiSpin">🔄</span>
+          <span>Consultar API Bermad</span>
+          <span id="apiStatusBadge" class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">ONLINE</span>
+        </button>
+        <button id="btnExportCSV" class="px-3.5 py-2 text-xs font-semibold rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center gap-1.5">
+          📥 Descargar CSV en Descargas
+        </button>
+        <button id="btnClearTable" class="px-3 py-2 text-xs font-semibold rounded-lg border border-red-200 dark:border-red-900 text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition">
+          🗑️ Limpiar
+        </button>
+      </div>
+    </header>
+
+    <!-- KPIs Dinámicos -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- Último Caudal -->
+      <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm space-y-1">
+        <span class="text-xs font-medium text-[var(--text-muted)]">ÚLTIMO CAUDAL (24H)</span>
+        <div class="flex items-baseline gap-2">
+          <span id="kpiLatestFlow" class="text-3xl font-extrabold tracking-tight">0.00</span>
+          <span class="text-xs font-semibold text-[var(--text-muted)]">m³/h</span>
+        </div>
+        <p class="text-[11px] text-[var(--text-muted)]" id="kpiLatestTime">Esperando registros</p>
+      </div>
+
+      <!-- Tarjeta: VOLUMEN ACUMULADO -->
+      <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm space-y-1">
+        <span class="text-xs font-medium text-[var(--text-muted)]">VOLUMEN ACUMULADO</span>
+        <div class="flex items-baseline gap-2">
+          <span id="kpiTotalVolume" class="text-3xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">0.00</span>
+          <span class="text-xs font-semibold text-[var(--text-muted)]">m³</span>
+        </div>
+        <p class="text-[11px] text-[var(--text-muted)]" id="kpiVolumeSubtitle">Total acumulado en 24h</p>
+      </div>
+
+      <!-- Promedio de Flujo -->
+      <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm space-y-1">
+        <span class="text-xs font-medium text-[var(--text-muted)]">PROMEDIO EN 24H</span>
+        <div class="flex items-baseline gap-2">
+          <span id="kpiAvgFlow" class="text-3xl font-extrabold tracking-tight text-blue-600 dark:text-blue-400">0.00</span>
+          <span class="text-xs font-semibold text-[var(--text-muted)]">m³/h</span>
+        </div>
+        <p class="text-[11px] text-[var(--text-muted)]">Media de lecturas activas</p>
+      </div>
+
+      <!-- Tarjeta: PARÁMETROS OPERACIONALES (Toneladas Cargadas sin decimales & Días de Riego) -->
+      <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-4 shadow-sm space-y-2">
+        <div class="flex items-center justify-between text-xs font-bold text-[var(--text-main)]">
+          <span>PARÁMETROS OPERACIONALES</span>
+          <span class="text-amber-500 text-sm">⚙️</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <label class="block text-[11px] font-medium text-[var(--text-muted)] mb-0.5">Toneladas cargadas</label>
+            <input type="number" step="1" min="0" id="inputTons" value="1000" 
+              class="w-full px-2 py-1.5 rounded-lg border border-[var(--border-color)] bg-transparent font-bold text-sm text-[var(--text-main)] focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+          <div>
+            <label class="block text-[11px] font-medium text-[var(--text-muted)] mb-0.5">Días de riego</label>
+            <input type="number" step="1" min="1" id="inputIrrigationDays" value="30" 
+              class="w-full px-2 py-1.5 rounded-lg border border-[var(--border-color)] bg-transparent font-bold text-sm text-[var(--text-main)] focus:ring-2 focus:ring-blue-500 outline-none">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gráfica de Flujo SVG con Escala Fija de 24 Horas -->
+    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm space-y-4">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[var(--border-color)] pb-3">
+        <div>
+          <h2 class="text-base font-bold flex items-center gap-2">
+            <span>📈</span> Curva de Flujo · Ventana Temporal de 24 Horas
+          </h2>
+          <p class="text-xs text-[var(--text-muted)]" id="chartWindowSubtitle">
+            Escala continua de 24 horas dividida en intervalos horarios
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 text-xs">
+          <label class="font-medium text-[var(--text-muted)]">Modo 24h:</label>
+          <select id="timeModeSelect" class="px-2.5 py-1.5 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] font-medium outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="today">Día Actual (00:00 a 24:00)</option>
+            <option value="rolling">Últimas 24 Horas Móviles</option>
+          </select>
+          <input type="date" id="selectedDateInput" class="px-2 py-1 rounded-lg border border-[var(--border-color)] bg-[var(--card-bg)] outline-none focus:ring-2 focus:ring-blue-500">
+        </div>
+      </div>
+
+      <div class="relative w-full h-80 bg-slate-50/50 dark:bg-slate-900/30 rounded-xl border border-[var(--border-color)] p-2">
+        <svg id="flowSvgChart" class="w-full h-full overflow-visible" viewBox="0 0 850 300" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="flowGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0284c7" stop-opacity="0.45"/>
+              <stop offset="100%" stop-color="#0284c7" stop-opacity="0.0"/>
+            </linearGradient>
+          </defs>
+          <g id="gridLayer"></g>
+          <path id="areaPath" fill="url(#flowGradient)" d=""></path>
+          <path id="linePath" fill="none" stroke="#0284c7" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d=""></path>
+          <g id="pointsLayer"></g>
+          <g id="timeLabelsLayer"></g>
+        </svg>
+
+        <div id="chartTooltip" class="absolute hidden pointer-events-none bg-slate-900 text-white text-xs px-2.5 py-1.5 rounded-lg shadow-xl -translate-x-1/2 -translate-y-full border border-slate-700 z-10">
+          <div class="font-bold text-blue-300" id="ttFlow">-- m³/h</div>
+          <div class="text-[10px] text-slate-400" id="ttDate">--:--</div>
+        </div>
+
+        <div id="emptyChartMessage" class="absolute inset-0 flex flex-col items-center justify-center text-center p-4">
+          <span class="text-3xl mb-2">⏱️</span>
+          <p class="text-sm font-semibold text-[var(--text-main)]">Sin mediciones en la ventana de 24 horas</p>
+          <p class="text-xs text-[var(--text-muted)] mt-0.5">Agrega una lectura en el formulario con fecha y hora dentro del período para ver la gráfica.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Formulario para Ingresar Nuevos Datos a la Tabla -->
+    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm space-y-4">
+      <h3 class="font-bold text-sm flex items-center gap-2">
+        <span>➕</span> Ingresar Lectura de Flujo a la Tabla
+      </h3>
+
+      <form id="addFlowForm" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+        <div>
+          <label class="block font-medium mb-1 text-[var(--text-muted)]">Fecha y Hora</label>
+          <input type="datetime-local" id="inputDateTime" required class="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-transparent focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="block font-medium mb-1 text-[var(--text-muted)]">Caudal / Flujo (m³/h)</label>
+          <input type="number" step="0.01" min="0" id="inputFlow" required placeholder="Ej: 38.50" class="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-transparent focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="block font-medium mb-1 text-[var(--text-muted)]">Volumen Acumulado (m³)</label>
+          <input type="number" step="0.01" min="0" id="inputVolume" placeholder="Ej: 1845.00" class="w-full px-3 py-2 rounded-lg border border-[var(--border-color)] bg-transparent focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div class="flex items-end">
+          <button type="submit" class="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg shadow-sm transition flex items-center justify-center gap-1.5">
+            <span>✓</span> Agregar y Actualizar Gráfica
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Tabla Dinámica e Interactiva de Datos -->
+    <div class="bg-[var(--card-bg)] border border-[var(--border-color)] rounded-2xl p-5 shadow-sm space-y-3">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-[var(--border-color)] pb-3">
+        <div>
+          <h2 class="text-base font-bold">Tabla de Datos de Flujo</h2>
+          <p class="text-xs text-[var(--text-muted)]">
+            Cada cambio en las lecturas reposiciona y redibuja la curva en la escala de 24 horas
+          </p>
+        </div>
+        <span class="text-xs font-semibold px-2.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-md" id="tableRowCount">
+          0 lecturas
+        </span>
+      </div>
+
+      <div class="overflow-x-auto custom-scroll max-h-96">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead class="sticky top-0 bg-[var(--card-bg)] border-b border-[var(--border-color)] z-10 shadow-sm">
+            <tr class="text-[var(--text-muted)] font-semibold">
+              <th class="py-2.5 px-3">#</th>
+              <th class="py-2.5 px-3">Fecha y Hora</th>
+              <th class="py-2.5 px-3">Caudal (m³/h)</th>
+              <th class="py-2.5 px-3">Volumen Acumulado (m³)</th>
+              <th class="py-2.5 px-3">Origen</th>
+              <th class="py-2.5 px-3 text-right">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="flowTableBody" class="divide-y divide-[var(--border-color)]">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const BERMAD_API = {
+      endpoint: "https://api2.bermad.io/graphql",
+      apiKey: "f846bcf7-88f9-424d-82c8-eefa67386f5eabfa27d5bebf4b",
+      uid: "dcc38574-e6b8-454e-b3f3-36b1c3924264"
+    };
+
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10);
+    document.getElementById('selectedDateInput').value = dateStr;
+
+    // Restaurar parámetros operacionales guardados si existen (sin decimales para toneladas)
+    if (localStorage.getItem('bermad_tons')) {
+      document.getElementById('inputTons').value = Math.round(parseFloat(localStorage.getItem('bermad_tons')) || 1000);
+    }
+    if (localStorage.getItem('bermad_days')) {
+      document.getElementById('inputIrrigationDays').value = Math.round(parseFloat(localStorage.getItem('bermad_days')) || 30);
+    }
+
+    let tableData = [
+      {
+        id: 1,
+        dateTime: new Date(new Date().setHours(2, 0, 0, 0)).toISOString(),
+        flow: 0.00,
+        volume: 0.00,
+        source: "DEMO SPENCE 3 (API Real)"
+      },
+      {
+        id: 2,
+        dateTime: new Date(new Date().setHours(6, 30, 0, 0)).toISOString(),
+        flow: 18.40,
+        volume: 120.50,
+        source: "Manual"
+      },
+      {
+        id: 3,
+        dateTime: new Date(new Date().setHours(11, 15, 0, 0)).toISOString(),
+        flow: 42.80,
+        volume: 325.20,
+        source: "Manual"
+      },
+      {
+        id: 4,
+        dateTime: new Date(new Date().setHours(16, 45, 0, 0)).toISOString(),
+        flow: 35.10,
+        volume: 510.80,
+        source: "Manual"
+      }
+    ];
+
+    function setDefaultInputDate() {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      document.getElementById('inputDateTime').value = now.toISOString().slice(0, 16);
+    }
+    setDefaultInputDate();
+
+    function showToast(title, msg) {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastTitle').innerText = title;
+      document.getElementById('toastMsg').innerText = msg;
+      toast.classList.remove('hidden');
+      setTimeout(() => {
+        toast.classList.add('hidden');
+      }, 5000);
+    }
+
+    function get24HourWindow() {
+      const mode = document.getElementById('timeModeSelect').value;
+      let windowStart, windowEnd;
+
+      if (mode === 'rolling') {
+        const now = new Date();
+        windowEnd = new Date(now);
+        windowStart = new Date(now.getTime() - 24 * 3600 * 1000);
+      } else {
+        const dateVal = document.getElementById('selectedDateInput').value || dateStr;
+        const [y, m, d] = dateVal.split('-').map(Number);
+        windowStart = new Date(y, m - 1, d, 0, 0, 0, 0);
+        windowEnd = new Date(y, m - 1, d, 23, 59, 59, 999);
+      }
+
+      return { windowStart, windowEnd };
+    }
+
+    // ==========================================
+    // PARÁMETROS OPERACIONALES (PERSISTENCIA Y VALIDACIÓN)
+    // ==========================================
+    function updateOperationalKPIs() {
+      const tonsRaw = parseFloat(document.getElementById('inputTons').value);
+      const tons = !isNaN(tonsRaw) ? Math.round(tonsRaw) : 0;
+      const days = parseInt(document.getElementById('inputIrrigationDays').value, 10) || 1;
+
+      localStorage.setItem('bermad_tons', tons);
+      localStorage.setItem('bermad_days', days);
+    }
+
+    function updateChartAndKPIs() {
+      const gridLayer = document.getElementById('gridLayer');
+      const timeLabelsLayer = document.getElementById('timeLabelsLayer');
+      const pointsLayer = document.getElementById('pointsLayer');
+      const linePath = document.getElementById('linePath');
+      const areaPath = document.getElementById('areaPath');
+      const emptyMsg = document.getElementById('emptyChartMessage');
+      const svg = document.getElementById('flowSvgChart');
+
+      gridLayer.innerHTML = '';
+      timeLabelsLayer.innerHTML = '';
+      pointsLayer.innerHTML = '';
+
+      const { windowStart, windowEnd } = get24HourWindow();
+      const totalWindowMs = windowEnd.getTime() - windowStart.getTime();
+
+      const inWindowData = tableData
+        .filter(d => {
+          const t = new Date(d.dateTime).getTime();
+          return t >= windowStart.getTime() && t <= windowEnd.getTime();
+        })
+        .sort((a, b) => new Date(a.dateTime) - new Date(b.dateTime));
+
+      document.getElementById('tableRowCount').innerText = `${tableData.length} lecturas`;
+
+      const startStr = `${windowStart.toLocaleDateString([], {day:'2-digit', month:'2-digit'})} ${windowStart.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+      const endStr = `${windowEnd.toLocaleDateString([], {day:'2-digit', month:'2-digit'})} ${windowEnd.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+      document.getElementById('chartWindowSubtitle').innerText = `Ventana 24h: ${startStr} → ${endStr}`;
+
+      const width = 850;
+      const height = 300;
+      const padLeft = 50;
+      const padRight = 30;
+      const padTop = 25;
+      const padBottom = 45;
+
+      const chartW = width - padLeft - padRight;
+      const chartH = height - padTop - padBottom;
+
+      const flows = inWindowData.map(d => Number(d.flow) || 0);
+      const maxF = flows.length > 0 ? Math.max(...flows) : 0;
+      const maxChartY = Math.max(maxF * 1.25, 10);
+      const minChartY = 0;
+
+      const ySteps = 4;
+      for (let s = 0; s <= ySteps; s++) {
+        const val = (maxChartY / ySteps) * s;
+        const y = padTop + chartH - (val / maxChartY) * chartH;
+
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", padLeft);
+        line.setAttribute("y1", y);
+        line.setAttribute("x2", width - padRight);
+        line.setAttribute("y2", y);
+        line.setAttribute("stroke", "currentColor");
+        line.setAttribute("stroke-opacity", "0.1");
+        line.setAttribute("stroke-dasharray", "4 4");
+        gridLayer.appendChild(line);
+
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x", padLeft - 10);
+        text.setAttribute("y", y + 4);
+        text.setAttribute("text-anchor", "end");
+        text.setAttribute("font-size", "11");
+        text.setAttribute("fill", "currentColor");
+        text.setAttribute("opacity", "0.55");
+        text.textContent = val.toFixed(1);
+        gridLayer.appendChild(text);
+      }
+
+      const hourIntervals = 8;
+      for (let h = 0; h <= hourIntervals; h++) {
+        const frac = h / hourIntervals;
+        const x = padLeft + frac * chartW;
+        const markTime = new Date(windowStart.getTime() + frac * totalWindowMs);
+
+        const vLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        vLine.setAttribute("x1", x);
+        vLine.setAttribute("y1", padTop);
+        vLine.setAttribute("x2", x);
+        vLine.setAttribute("y2", padTop + chartH);
+        vLine.setAttribute("stroke", "currentColor");
+        vLine.setAttribute("stroke-opacity", "0.08");
+        gridLayer.appendChild(vLine);
+
+        const tText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        tText.setAttribute("x", x);
+        tText.setAttribute("y", padTop + chartH + 20);
+        tText.setAttribute("text-anchor", "middle");
+        tText.setAttribute("font-size", "10");
+        tText.setAttribute("font-family", "monospace");
+        tText.setAttribute("fill", "currentColor");
+        tText.setAttribute("opacity", "0.65");
+        tText.textContent = markTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        timeLabelsLayer.appendChild(tText);
+      }
+
+      const xLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      xLabel.setAttribute("x", padLeft + chartW / 2);
+      xLabel.setAttribute("y", height - 6);
+      xLabel.setAttribute("text-anchor", "middle");
+      xLabel.setAttribute("font-size", "10");
+      xLabel.setAttribute("fill", "currentColor");
+      xLabel.setAttribute("opacity", "0.4");
+      xLabel.textContent = "ESCALA TEMPORAL (24 HORAS)";
+      timeLabelsLayer.appendChild(xLabel);
+
+      if (inWindowData.length === 0) {
+        emptyMsg.classList.remove('hidden');
+        linePath.setAttribute('d', '');
+        areaPath.setAttribute('d', '');
+        document.getElementById('kpiLatestFlow').innerText = "0.00";
+        document.getElementById('kpiTotalVolume').innerText = "0.00";
+        document.getElementById('kpiAvgFlow').innerText = "0.00";
+        document.getElementById('kpiLatestTime').innerText = "Sin registros en 24h";
+        updateOperationalKPIs(0);
+        return;
+      }
+
+      emptyMsg.classList.add('hidden');
+
+      // KPIs
+      const latest = inWindowData[inWindowData.length - 1];
+      const avgF = flows.reduce((a, b) => a + b, 0) / flows.length;
+      document.getElementById('kpiLatestFlow').innerText = Number(latest.flow).toFixed(2);
+      document.getElementById('kpiAvgFlow').innerText = avgF.toFixed(2);
+      document.getElementById('kpiLatestTime').innerText = new Date(latest.dateTime).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+      // Volumen acumulado en m³
+      const volumes = inWindowData.map(d => Number(d.volume) || 0);
+      const maxVol = Math.max(...volumes);
+      const totalAccumulated = maxVol > 0 ? maxVol : volumes.reduce((a, b) => a + b, 0);
+      document.getElementById('kpiTotalVolume').innerText = totalAccumulated.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+      updateOperationalKPIs(totalAccumulated);
+
+      const pts = inWindowData.map(d => {
+        const t = new Date(d.dateTime).getTime();
+        const timeFraction = Math.max(0, Math.min(1, (t - windowStart.getTime()) / totalWindowMs));
+        const x = padLeft + timeFraction * chartW;
+        const y = padTop + chartH - ((Number(d.flow) - minChartY) / (maxChartY - minChartY)) * chartH;
+        return { x, y, data: d };
+      });
+
+      if (pts.length === 1) {
+        linePath.setAttribute('d', `M ${padLeft} ${pts[0].y} L ${width - padRight} ${pts[0].y}`);
+        areaPath.setAttribute('d', `M ${padLeft} ${pts[0].y} L ${width - padRight} ${pts[0].y} L ${width - padRight} ${padTop + chartH} L ${padLeft} ${padTop + chartH} Z`);
+      } else {
+        let dLine = `M ${pts[0].x} ${pts[0].y}`;
+        for (let i = 1; i < pts.length; i++) {
+          dLine += ` L ${pts[i].x} ${pts[i].y}`;
+        }
+        linePath.setAttribute('d', dLine);
+        const dArea = `${dLine} L ${pts[pts.length - 1].x} ${padTop + chartH} L ${pts[0].x} ${padTop + chartH} Z`;
+        areaPath.setAttribute('d', dArea);
+      }
+
+      const tooltip = document.getElementById('chartTooltip');
+      const ttFlow = document.getElementById('ttFlow');
+      const ttDate = document.getElementById('ttDate');
+
+      pts.forEach(pt => {
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", pt.x);
+        circle.setAttribute("cy", pt.y);
+        circle.setAttribute("r", "5");
+        circle.setAttribute("fill", "#0284c7");
+        circle.setAttribute("stroke", "#ffffff");
+        circle.setAttribute("stroke-width", "2");
+        circle.setAttribute("class", "cursor-pointer transition-transform hover:scale-150");
+
+        circle.addEventListener("mouseenter", () => {
+          circle.setAttribute("r", "7.5");
+          const rect = svg.getBoundingClientRect();
+          const svgX = (pt.x / width) * rect.width;
+          const svgY = (pt.y / height) * rect.height;
+
+          tooltip.style.left = `${svgX}px`;
+          tooltip.style.top = `${svgY - 10}px`;
+          ttFlow.innerText = `${Number(pt.data.flow).toFixed(2)} m³/h`;
+          ttDate.innerText = new Date(pt.data.dateTime).toLocaleString([], {
+            day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+          });
+          tooltip.classList.remove('hidden');
+        });
+
+        circle.addEventListener("mouseleave", () => {
+          circle.setAttribute("r", "5");
+          tooltip.classList.add('hidden');
+        });
+
+        pointsLayer.appendChild(circle);
+      });
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('flowTableBody');
+      tbody.innerHTML = '';
+
+      const displayData = [...tableData].sort((a, b) => new Date(b.dateTime) - new Date(a.dateTime));
+
+      displayData.forEach((row, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-500/5 transition";
+        const dateFormatted = new Date(row.dateTime).toLocaleString();
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-3 font-mono text-[11px] text-[var(--text-muted)]">${displayData.length - idx}</td>
+          <td class="py-2.5 px-3 font-mono font-medium">${dateFormatted}</td>
+          <td class="py-2.5 px-3 font-bold text-blue-600 dark:text-blue-400">${Number(row.flow).toFixed(2)}</td>
+          <td class="py-2.5 px-3 font-semibold text-emerald-600 dark:text-emerald-400">${Number(row.volume || 0).toFixed(2)}</td>
+          <td class="py-2.5 px-3 text-[var(--text-muted)] text-[11px]">${row.source || 'Manual'}</td>
+          <td class="py-2.5 px-3 text-right">
+            <button onclick="deleteRow(${row.id})" class="text-xs text-red-500 hover:text-red-700 font-semibold px-2 py-0.5 rounded hover:bg-red-50 dark:hover:bg-red-950/30 transition">
+              ✕ Eliminar
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      updateChartAndKPIs();
+    }
+
+    window.deleteRow = function(id) {
+      tableData = tableData.filter(d => d.id !== id);
+      renderTable();
+
+    };
+
+    document.getElementById('addFlowForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const dtInput = document.getElementById('inputDateTime').value;
+      const flowInput = parseFloat(document.getElementById('inputFlow').value);
+      const volInput = parseFloat(document.getElementById('inputVolume').value) || 0;
+
+      if (!dtInput || isNaN(flowInput)) return;
+
+      const newRecord = {
+        id: Date.now(),
+        dateTime: new Date(dtInput).toISOString(),
+        flow: flowInput,
+        volume: volInput,
+        source: "Manual"
+      };
+
+      tableData.push(newRecord);
+      document.getElementById('inputFlow').value = '';
+      setDefaultInputDate();
+      renderTable();
+
+    });
+
+    document.getElementById('inputTons').addEventListener('input', () => updateOperationalKPIs());
+    document.getElementById('inputIrrigationDays').addEventListener('input', () => updateOperationalKPIs());
+
+    document.getElementById('timeModeSelect').addEventListener('change', (e) => {
+      const isRolling = e.target.value === 'rolling';
+      document.getElementById('selectedDateInput').disabled = isRolling;
+      updateChartAndKPIs();
+    });
+
+    document.getElementById('selectedDateInput').addEventListener('change', () => {
+      updateChartAndKPIs();
+    });
+
+    // ==========================================
+    // CONTROL DEL MARCADOR LUMÍNICO (LED API ONLINE / OFFLINE)
+    // ==========================================
+    function setApiOnlineStatus(status, customText = null) {
+      const ledDot = document.getElementById('apiLedDot');
+      const ledPing = document.getElementById('apiLedPing');
+      const statusBadge = document.getElementById('apiStatusBadge');
+      const btn = document.getElementById('btnFetchApi');
+
+      if (!ledDot || !ledPing || !statusBadge) return;
+
+      if (status === true || status === 'online') {
+        // ONLINE: Marcador verde con halo luminoso activo
+        ledDot.className = 'relative inline-flex rounded-full h-2.5 w-2.5 led-online';
+        ledPing.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75';
+        ledPing.style.display = 'inline-flex';
+        statusBadge.textContent = customText || 'ONLINE';
+        statusBadge.className = 'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-200 border border-emerald-400/40';
+        btn.setAttribute('title', 'API BERMAD Cloud: En línea y conectada (HTTP 200)');
+      } else if (status === false || status === 'offline') {
+        // OFFLINE: Marcador rojo con halo luminoso
+        ledDot.className = 'relative inline-flex rounded-full h-2.5 w-2.5 led-offline';
+        ledPing.className = 'hidden';
+        ledPing.style.display = 'none';
+        statusBadge.textContent = customText || 'OFFLINE';
+        statusBadge.className = 'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-200 border border-rose-400/40';
+        btn.setAttribute('title', 'API BERMAD Cloud: Sin conexión o error de red');
+      } else {
+        // CONECTANDO: Marcador ámbar parpadeante
+        ledDot.className = 'relative inline-flex rounded-full h-2.5 w-2.5 led-connecting';
+        ledPing.className = 'animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75';
+        ledPing.style.display = 'inline-flex';
+        statusBadge.textContent = customText || 'CONSULTANDO...';
+        statusBadge.className = 'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-200 border border-amber-400/40';
+      }
+    }
+
+    async function checkOrFetchBermadApi(isInitialCheck = false) {
+      const spin = document.getElementById('apiSpin');
+      const btn = document.getElementById('btnFetchApi');
+      btn.disabled = true;
+      spin.classList.add('animate-spin');
+      setApiOnlineStatus('connecting', isInitialCheck ? 'COMPROBANDO...' : 'CONSULTANDO...');
+
+      const query = `
+        query logsWaterMeterUnitAgg($uids: [String]) {
+          logWaterMeterUnitAgg(uids: $uids) {
+            dateTime
+            entityId
+            unitId
+            entityName
+            sumAmount
+          }
+        }
+      `;
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      try {
+        // GraphQL sobre HTTP con método GET (parámetros en la query string)
+        const params = new URLSearchParams({
+          query: query,
+          variables: JSON.stringify({ uids: [BERMAD_API.uid] })
+        });
+
+        const response = await fetch(`${BERMAD_API.endpoint}?${params.toString()}`, {
+          method: 'GET',
+          headers: {
+            'x-api-key': BERMAD_API.apiKey
+          },
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const resJson = await response.json();
+        if (resJson.errors && resJson.errors.length > 0) {
+          throw new Error(resJson.errors[0].message || 'Error en respuesta GraphQL');
+        }
+
+        const items = resJson.data && resJson.data.logWaterMeterUnitAgg;
+        if (items && items.length > 0) {
+          // Preferir la entidad del dispositivo configurado (DEMO SPENCE 3)
+          const item = items.find(x => (x.entityName || '').includes('DEMO SPENCE 3')) || items[0];
+          // Conexión exitosa -> Marcador en VERDE (ONLINE)
+          setApiOnlineStatus(true, 'ONLINE');
+
+          if (!isInitialCheck) {
+            tableData.push({
+              id: Date.now(),
+              dateTime: new Date().toISOString(),
+              flow: Number(item.sumAmount || 0),
+              volume: Number(item.sumAmount || 0),
+              source: `${item.entityName || 'DEMO SPENCE 3'} (API Bermad en Vivo)`
+            });
+            renderTable();
+
+            showToast("✓ Telemetría Recibida", `Dispositivo ${item.entityName || 'DEMO SPENCE 3'} conectado en línea.`);
+          }
+        } else {
+          setApiOnlineStatus(true, 'ONLINE');
+        }
+      } catch (err) {
+        clearTimeout(timeoutId);
+        console.warn("Error de conexión con API Bermad:", err);
+        // Error de conexión -> Marcador en ROJO (OFFLINE)
+        setApiOnlineStatus(false, 'OFFLINE');
+        if (!isInitialCheck) {
+          showToast("⚠️ API Fuera de Línea", `No fue posible conectar con Bermad Cloud (${err.message || 'Error de red'})`);
+        }
+      } finally {
+        spin.classList.remove('animate-spin');
+        btn.disabled = false;
+      }
+    }
+
+    document.getElementById('btnFetchApi').addEventListener('click', () => {
+      checkOrFetchBermadApi(false);
+    });
+
+    document.getElementById('btnClearTable').addEventListener('click', () => {
+      if (confirm("¿Vaciar las lecturas de la tabla?")) {
+        tableData = [];
+        renderTable();
+
+      }
+    });
+
+    document.getElementById('btnExportCSV').addEventListener('click', async () => {
+      if (tableData.length === 0) {
+        alert("No hay registros en la tabla para exportar.");
+        return;
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      const filename = `flujos_bermad_24h_${timestamp}.csv`;
+
+      let csv = "Fecha_Hora,Caudal_m3h,Volumen_m3,Origen\n";
+      tableData.forEach(r => {
+        csv += `"${r.dateTime}",${r.flow},${r.volume},"${r.source}"\n`;
+      });
+
+      // Descarga 100% en el navegador: no se envían datos a ningún servidor
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast(
+        "✓ Descarga completada",
+        `Guardado en tu carpeta Descargas (~/Downloads/${filename})`
+      );
+    });
+
+    renderTable();
+
+    // Verificación automática de estado API al cargar y cada 60 segundos
+    // (un único temporizador para evitar consultas duplicadas)
+    setTimeout(() => {
+      checkOrFetchBermadApi(true);
+    }, 400);
+
+    setInterval(() => {
+      checkOrFetchBermadApi(true);
+    }, 60000);
+
+  </script>
+</body>
+</html>
