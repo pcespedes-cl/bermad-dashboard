@@ -2019,6 +2019,7 @@
             </div>
             <div class="plan-list">
               <div><span>Razón actual</span><strong id="planRatio">—</strong></div>
+              <div><span>RL ejecutada</span><strong id="planExecutedRatio">—</strong></div>
               <div><span>Meta ciclo</span><strong id="planTargetRatio">—</strong></div>
               <div><span>Volumen periodo</span><strong id="planVolume">—</strong></div>
               <div><span>Brecha de caudal</span><strong id="planGap">—</strong></div>
@@ -2951,6 +2952,7 @@
       $('#planProgressPct').title = `Meta a la fecha: ${num(p.targetToDate, 0)} m³ · proyectado: ${num(p.projectedToDate, 0)} m³`;
       $('#planProgressBar').style.width = `${Math.max(0, Math.min(100, p.compliance))}%`;
       $('#planRatio').textContent = `${num(p.actualCycleRatio, ratioDigits())} m³/t`;
+      $('#planExecutedRatio').textContent = `${num(p.executedCycleRatio, ratioDigits())} m³/t`;
       $('#planTargetRatio').textContent = `${num(p.targetCycleRatio, ratioDigits())} m³/t`;
       $('#planVolume').textContent = `${num(p.volume)} m³ · ${num(stats.points || 0, 0)} lect.`;
 
