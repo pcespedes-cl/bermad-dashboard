@@ -6,6 +6,21 @@ caudal del medidor junto con la **razón de lixiviación** del plan operativo.
 - **Local:** <http://localhost:8765/>
 - **Versión anterior (solo navegador):** `monitor_flujo_24h.html`
 
+## Configuración
+
+La API key y los IDs se leen de variables de entorno (o del archivo `.env`):
+
+```bash
+BERMAD_API_KEY=tu-api-key
+BERMAD_PROJECT_ID=f09f3f01c034ad82ac311fdb3e47e391
+BERMAD_UNIT_ID=dcc38574-e6b8-454e-b3f3-36b1c3924264
+BERMAD_TZ=America/Santiago
+PORT=8765
+HOST=127.0.0.1
+```
+
+Copia `.env.example` a `.env` y completa `BERMAD_API_KEY`. Para exponer en la red local usa `HOST=0.0.0.0`.
+
 ## Qué muestra
 
 - **Gestión de flujos**: caudal actual con fecha y hora de la lectura, caudal
