@@ -7,7 +7,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <title>Smart - Lix · Panel de lixiviación</title>
+  <title>Smart - Lix · Monitor de flujo (Gemini)</title>
   <style>
     :root {
       /* Paleta macOS (light) */
@@ -204,15 +204,15 @@
       height: 36px;
       display: grid;
       place-items: center;
-      border: 1px solid var(--line);
+      border: 1px solid var(--blue-wash-mid);
       border-radius: 11px;
-      background: var(--panel);
-      color: var(--muted);
+      background: var(--blue-wash);
+      color: var(--brand);
       box-shadow: var(--shadow-sm);
       transition: .18s ease;
     }
 
-    .icon-btn:hover { color: var(--text); border-color: var(--line-strong); transform: translateY(-1px); }
+    .icon-btn:hover { color: #ffffff; background: var(--brand); border-color: var(--brand); transform: translateY(-1px); }
     .icon-btn svg { width: 17px; height: 17px; }
 
     .refresh-btn {
@@ -243,9 +243,9 @@
       align-items: center;
       gap: 3px;
       padding: 4px;
-      border: 1px solid var(--line);
+      border: 1px solid var(--blue-wash-mid);
       border-radius: 11px;
-      background: var(--panel);
+      background: var(--blue-wash);
       box-shadow: var(--shadow-sm);
     }
 
@@ -261,11 +261,11 @@
       transition: .16s ease;
     }
 
-    .source-control button:hover { color: var(--text); background: var(--panel-soft); }
+    .source-control button:hover { color: var(--brand); background: var(--blue-hover); }
     .source-control button.active {
-      color: var(--brand);
-      background: var(--brand-soft);
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 18%, transparent);
+      color: #ffffff;
+      background: var(--brand);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 35%, transparent);
     }
 
     .api-config {
@@ -388,9 +388,9 @@
       align-items: center;
       gap: 3px;
       padding: 4px;
-      border: 1px solid var(--line);
+      border: 1px solid var(--blue-wash-mid);
       border-radius: 13px;
-      background: var(--panel);
+      background: var(--blue-wash);
       box-shadow: var(--shadow-sm);
       flex: 0 0 auto;
     }
@@ -406,11 +406,11 @@
       transition: .16s ease;
     }
 
-    .range-control button:hover { color: var(--text); background: var(--panel-soft); }
+    .range-control button:hover { color: #ffffff; background: var(--blue-hover); }
     .range-control button.active {
-      color: var(--brand);
-      background: var(--brand-soft);
-      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 18%, transparent);
+      color: #ffffff;
+      background: var(--brand);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 35%, transparent);
     }
 
     /* ---------- Error ---------- */
@@ -1397,16 +1397,16 @@
       align-items: center;
       gap: 6px;
       padding: 7px 10px;
-      border: 1px solid var(--line);
+      border: 1px solid var(--blue-wash-mid);
       border-radius: 9px;
-      background: var(--panel);
-      color: var(--muted);
+      background: var(--blue-wash);
+      color: var(--brand);
       font-size: 10.5px;
       font-weight: 700;
       transition: .16s ease;
     }
 
-    .ghost-btn:hover { color: var(--text); border-color: var(--line-strong); background: var(--panel-soft); }
+    .ghost-btn:hover { color: #ffffff; border-color: var(--brand); background: var(--brand); }
     .ghost-btn svg { width: 13px; height: 13px; }
     .ghost-btn:disabled { opacity: .6; cursor: progress; }
 
