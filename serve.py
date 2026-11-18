@@ -30,14 +30,29 @@ except Exception:  # pragma: no cover - certifi suele estar disponible
     CA_FILE = None
 
 BASE_DIR = Path(__file__).resolve().parent
+# Carga opcional de variables desde .env (solo stdlib)
+_env_path = Path(__file__).resolve().parent / ".env"
+if _env_path.exists():
+    for _line in _env_path.read_text(encoding="utf-8").splitlines():
+        _line = _line.strip()
+        if not _line or _line.startswith("#") or "=" not in _line:
+            continue
+        _key, _value = _line.split("=", 1)
+        _key = _key.strip()
+        _value = _value.strip().strip('"').strip("'")
+        if _key and _key not in os.environ:
+            os.environ[_key] = _value
+
 PORT = int(os.environ.get("PORT", "8765"))
 HOST = os.environ.get("HOST", "127.0.0.1")
 
 API_BASE = os.environ.get("BERMAD_API_BASE", "https://api-bermad.com").rstrip("/")
-API_KEY = os.environ.get(
-    "BERMAD_API_KEY",
-    "f846bcf7-88f9-424d-82c8-eefa67386f5eabfa27d5bebf4b",
-)
+API_KEY = os.environ.get("BERMAD_API_KEY", "")
+if not API_KEY:
+    raise SystemExit(
+        "Falta BERMAD_API_KEY. Define la variable de entorno o crea un archivo .env "
+        "con BERMAD_API_KEY=<tu-api-key>."
+    )
 PROJECT_ID = os.environ.get("BERMAD_PROJECT_ID", "f09f3f01c034ad82ac311fdb3e47e391")
 UNIT_ID = os.environ.get("BERMAD_UNIT_ID", "dcc38574-e6b8-454e-b3f3-36b1c3924264")
 DEFAULT_TZ = os.environ.get("BERMAD_TZ", "America/Santiago")
