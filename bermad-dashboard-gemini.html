@@ -1611,8 +1611,8 @@
       --text: #ffffff;
       --muted: rgba(255, 255, 255, .74);
       --muted-2: rgba(255, 255, 255, .58);
-      --line: rgba(255, 255, 255, .24);
-      --line-strong: rgba(255, 255, 255, .34);
+      --line: rgba(255, 255, 255, .45);
+      --line-strong: rgba(255, 255, 255, .6);
       --panel: rgba(255, 255, 255, .12);
       --panel-soft: rgba(255, 255, 255, .10);
       --panel-raised: rgba(255, 255, 255, .16);
@@ -3052,7 +3052,7 @@
         gridLine.setAttribute('x2', W - pad.r);
         gridLine.setAttribute('y2', yPos);
         gridLine.setAttribute('stroke', 'var(--line)');
-        gridLine.setAttribute('stroke-opacity', index === 0 ? '0.9' : '0.55');
+        gridLine.setAttribute('stroke-opacity', index === 0 ? '1' : '0.7');
         gridLine.setAttribute('stroke-dasharray', index === 0 ? '' : '3 5');
         grid.appendChild(gridLine);
 
@@ -3077,7 +3077,7 @@
         vertical.setAttribute('x2', xPos);
         vertical.setAttribute('y2', pad.t + plotH);
         vertical.setAttribute('stroke', 'var(--line)');
-        vertical.setAttribute('stroke-opacity', '0.35');
+        vertical.setAttribute('stroke-opacity', '0.45');
         grid.appendChild(vertical);
 
         const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
