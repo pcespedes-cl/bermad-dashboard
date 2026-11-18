@@ -410,6 +410,45 @@
       box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 35%, transparent);
     }
 
+    .live-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ff3b30;
+      box-shadow: 0 0 0 0 rgba(255, 59, 48, .55);
+      animation: livePulse 1.6s ease-out infinite;
+    }
+
+    .live-btn.active {
+      color: #ffffff;
+      background: var(--brand);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 35%, transparent);
+    }
+
+    .live-btn.active .live-dot {
+      background: #ffffff;
+      box-shadow: 0 0 0 0 rgba(255, 255, 255, .55);
+      animation: livePulseWhite 1.6s ease-out infinite;
+    }
+
+    @keyframes livePulse {
+      0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, .55); }
+      70% { box-shadow: 0 0 0 7px rgba(255, 59, 48, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+    }
+
+    @keyframes livePulseWhite {
+      0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, .55); }
+      70% { box-shadow: 0 0 0 7px rgba(255, 255, 255, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
+    }
+
     /* ---------- Error ---------- */
     .error-banner {
       display: flex;
@@ -1717,6 +1756,7 @@
           <p class="subhead">Medidor <strong id="meterName">—</strong></p>
         </div>
         <div class="range-control" role="group" aria-label="Rango de tiempo">
+          <button type="button" class="live-btn" data-live="1" title="Mostrar solo el último dato recibido"><span class="live-dot"></span>En vivo</button>
           <button type="button" data-hours="6">6 h</button>
           <button type="button" data-hours="12">12 h</button>
           <button type="button" data-hours="24" class="active">24 h</button>
@@ -2170,6 +2210,7 @@
       controller: null,
       loading: false,
       lastLoadedAt: 0,
+      live: false,
     };
     let plan = { ...PLAN_DEFAULTS };
 
@@ -2699,10 +2740,11 @@
       setLoading(true);
       hideError();
 
+      const loadHours = state.live ? 1 : state.hours;
       try {
         if (state.source === 'sim') {
           await delay(380, controller.signal);
-          const payload = buildSimulatedDashboard(state.hours);
+          const payload = buildSimulatedDashboard(loadHours);
           if (controller.signal.aborted) return;
           state.data = payload;
           state.lastLoadedAt = Date.now();
@@ -2710,7 +2752,7 @@
           return;
         }
 
-        const url = apiUrl(`/api/dashboard?hours=${state.hours}${force ? '&force=1' : ''}`);
+        const url = apiUrl(`/api/dashboard?hours=${loadHours}${force ? '&force=1' : ''}`);
         const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || !payload.ok) {
@@ -3016,6 +3058,10 @@
         plotSeries = temperatureSeries.map((point) => ({ t: point.t, v: Number(point.v) || 0 }));
       }
 
+      if (state.live && plotSeries.length) {
+        plotSeries = [plotSeries[plotSeries.length - 1]];
+      }
+
       const W = Math.max(320, wrap.clientWidth || 800);
       const H = Math.max(240, wrap.clientHeight || 338);
       svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
@@ -3115,22 +3161,35 @@
         ? Number(envStats.avg)
         : (values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0);
 
-      $('#chartTitle').textContent = isVolume
-        ? 'Volumen acumulado vs meta diaria'
-        : isTemperature
-          ? 'Temperatura'
-          : isPressure
-            ? 'Presión'
-            : 'Caudal vs meta operativa';
-      $('#chartSubtitle').textContent = `${rangeLabel(hours)} · resolución ${intervalMin} min · ${
-        isVolume
-          ? 'volumen integrado'
+      if (state.live) {
+        $('#chartTitle').textContent = isVolume
+          ? 'Volumen (última lectura)'
           : isTemperature
-            ? (plotSeries.length ? `promedio ${num(envAvg)} °C` : 'sin datos (próximamente)')
+            ? 'Temperatura (en vivo)'
             : isPressure
-              ? (plotSeries.length ? `promedio ${num(envAvg)} psi` : 'sin datos (próximamente)')
-              : 'caudal instantáneo'
-      }`;
+              ? 'Presión (en vivo)'
+              : 'Caudal (en vivo)';
+        $('#chartSubtitle').textContent = plotSeries.length
+          ? `${fmtDateTime(plotSeries[0].t)} · última lectura recibida`
+          : 'Sin datos';
+      } else {
+        $('#chartTitle').textContent = isVolume
+          ? 'Volumen acumulado vs meta diaria'
+          : isTemperature
+            ? 'Temperatura'
+            : isPressure
+              ? 'Presión'
+              : 'Caudal vs meta operativa';
+        $('#chartSubtitle').textContent = `${rangeLabel(hours)} · resolución ${intervalMin} min · ${
+          isVolume
+            ? 'volumen integrado'
+            : isTemperature
+              ? (plotSeries.length ? `promedio ${num(envAvg)} °C` : 'sin datos (próximamente)')
+              : isPressure
+                ? (plotSeries.length ? `promedio ${num(envAvg)} psi` : 'sin datos (próximamente)')
+                : 'caudal instantáneo'
+        }`;
+      }
       $('#legendActual').textContent = isVolume
         ? 'Volumen acumulado'
         : isTemperature
@@ -3171,6 +3230,16 @@
         $('#statMin').textContent = `${num(data.stats?.min)} m³/h`;
         $('#statAvg').textContent = `${num(data.stats?.avg)} m³/h`;
         $('#statMax').textContent = `${num(data.stats?.max)} m³/h`;
+      }
+      if (state.live && plotSeries.length === 1) {
+        const liveValue = plotSeries[0].v;
+        $('#statLabel1').textContent = 'Último';
+        $('#statLabel2').textContent = 'Último';
+        $('#statLabel3').textContent = 'Último';
+        $('#statLabel4').textContent = 'Lecturas';
+        $('#statMin').textContent = `${num(liveValue)} ${unit}`;
+        $('#statAvg').textContent = `${num(liveValue)} ${unit}`;
+        $('#statMax').textContent = `${num(liveValue)} ${unit}`;
       }
       $('#statPoints').textContent = num(plotSeries.length || 0, 0);
 
@@ -3532,14 +3601,34 @@
         });
       });
 
-      $$('.range-control button').forEach((button) => {
+      $$('.range-control button[data-hours]').forEach((button) => {
         button.addEventListener('click', () => {
+          state.live = false;
+          const liveBtn = document.querySelector('.live-btn');
+          if (liveBtn) liveBtn.classList.remove('active');
           $$('.range-control button').forEach((item) => item.classList.remove('active'));
           button.classList.add('active');
           state.hours = Number(button.dataset.hours);
           loadDashboard(true);
         });
       });
+
+      const liveBtn = document.querySelector('.live-btn');
+      if (liveBtn) {
+        liveBtn.addEventListener('click', () => {
+          state.live = !state.live;
+          liveBtn.classList.toggle('active', state.live);
+          $$('.range-control button[data-hours]').forEach((item) => item.classList.remove('active'));
+          if (state.live) {
+            loadDashboard(true);
+          } else {
+            state.hours = 24;
+            const defaultBtn = document.querySelector('.range-control button[data-hours="24"]');
+            if (defaultBtn) defaultBtn.classList.add('active');
+            loadDashboard(true);
+          }
+        });
+      }
 
       let resizeTimer = null;
       const observer = new ResizeObserver(() => {
@@ -3551,13 +3640,15 @@
       observer.observe($('#chartWrap'));
 
       window.setInterval(() => {
-        if (!document.hidden && Date.now() - state.lastLoadedAt > 55000) {
+        const threshold = state.live ? 8000 : 55000;
+        if (!document.hidden && Date.now() - state.lastLoadedAt > threshold) {
           loadDashboard(false);
         }
-      }, 60000);
+      }, 10000);
 
       document.addEventListener('visibilitychange', () => {
-        if (!document.hidden && Date.now() - state.lastLoadedAt > 60000) {
+        const threshold = state.live ? 8000 : 60000;
+        if (!document.hidden && Date.now() - state.lastLoadedAt > threshold) {
           loadDashboard(false);
         }
       });
