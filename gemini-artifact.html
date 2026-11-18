@@ -1575,6 +1575,51 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
     }
+    /* ---------- Tarjetas y diálogos en azul (como Gestión de flujos) ---------- */
+    .card, .kpi, .api-config {
+      color: var(--text);
+      --text: #ffffff;
+      --muted: rgba(255, 255, 255, .74);
+      --muted-2: rgba(255, 255, 255, .58);
+      --line: rgba(255, 255, 255, .24);
+      --line-strong: rgba(255, 255, 255, .34);
+      --panel: rgba(255, 255, 255, .12);
+      --panel-soft: rgba(255, 255, 255, .10);
+      --panel-raised: rgba(255, 255, 255, .16);
+      --brand-soft: rgba(255, 255, 255, .18);
+      --blue-wash: rgba(255, 255, 255, .14);
+      --blue-wash-mid: rgba(255, 255, 255, .20);
+      --blue-wash-strong: rgba(255, 255, 255, .26);
+      --blue-hover: rgba(255, 255, 255, .22);
+      --green: #5de67a;
+      --green-soft: rgba(93, 230, 122, .18);
+      --amber: #ffc266;
+      --amber-soft: rgba(255, 194, 102, .18);
+      --red: #ff6b61;
+      --red-soft: rgba(255, 107, 97, .18);
+      --violet: #d88cff;
+      --violet-soft: rgba(216, 140, 255, .18);
+      border: 0;
+      background:
+        radial-gradient(120% 150% at 100% 0%, rgba(255, 255, 255, .22) 0%, transparent 45%),
+        linear-gradient(145deg, #005bb5 0%, #007aff 57%, #409cff 100%);
+      box-shadow: 0 20px 40px -24px rgba(0, 122, 255, .45);
+    }
+
+    .card .ratio-col-target .ratio-col-value { color: #ffffff; }
+    .card .trend-up, .card .trend-down { color: #dff6ff; }
+    .card .trend-flat { color: rgba(255, 255, 255, .74); }
+    .card .flow-value { color: #ffffff; }
+    .card #chartLine { stroke: #ffffff; }
+    .card #chartTargetLine { stroke: rgba(255, 255, 255, .75); }
+    .card .chip-flow { background: rgba(255, 255, 255, .18); color: #ffffff; }
+    .card .chip-zero { background: rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .74); }
+    .card .op-input { background: rgba(255, 255, 255, .92); border-color: rgba(255, 255, 255, .4); }
+    .card .op-input input, .card .op-input em { color: #1d1d1f; }
+    .api-config input { background: rgba(255, 255, 255, .92); color: #1d1d1f; }
+    .api-config button { background: rgba(255, 255, 255, .18); color: #ffffff; }
+    .api-config button.primary { background: #ffffff; color: #005bb5; }
+
   </style>
 </head>
 <body>
