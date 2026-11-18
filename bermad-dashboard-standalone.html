@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <title>BERMAD Cloud · Monitor de flujo</title>
+  <title>Codelco - División El Salvador · Monitor de flujo</title>
   <style>
     :root {
       --bg: #f5f5f7;
@@ -222,6 +222,87 @@
     .refresh-btn svg { width: 15px; height: 15px; }
     .refresh-btn.is-loading svg { animation: spin .9s linear infinite; }
 
+    /* ---------- Fuente de datos ---------- */
+    .top-actions { position: relative; }
+
+    .source-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--panel);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .source-control button {
+      border: 0;
+      background: transparent;
+      color: var(--muted);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: .16s ease;
+    }
+
+    .source-control button:hover { color: var(--text); background: var(--panel-soft); }
+    .source-control button.active {
+      color: var(--brand);
+      background: var(--brand-soft);
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--brand) 18%, transparent);
+    }
+
+    .api-config {
+      position: absolute;
+      top: calc(100% + 9px);
+      right: 0;
+      z-index: 40;
+      width: min(320px, 86vw);
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .api-config strong { display: block; font-size: 11.5px; margin-bottom: 7px; }
+
+    .api-config input {
+      width: 100%;
+      height: 34px;
+      padding: 0 10px;
+      border: 1px solid var(--line-strong);
+      border-radius: 9px;
+      background: var(--panel-soft);
+      color: var(--text);
+      font-size: 12px;
+    }
+
+    .api-config input:focus {
+      outline: 2px solid color-mix(in srgb, var(--brand) 35%, transparent);
+      outline-offset: 1px;
+    }
+
+    .api-config .config-row { display: flex; gap: 7px; margin-top: 9px; }
+
+    .api-config button {
+      flex: 1;
+      height: 32px;
+      border-radius: 9px;
+      border: 1px solid var(--line);
+      background: var(--panel-soft);
+      color: var(--text);
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+
+    .api-config button.primary { border: 0; background: var(--brand); color: #fff; }
+    .api-config p { margin: 8px 0 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+    .api-config .config-error { margin-top: 7px; color: var(--red); font-size: 10.5px; }
+
     /* ---------- Page heading ---------- */
     .page-head {
       display: flex;
@@ -342,10 +423,10 @@
 
     .op-fields {
       display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr)) minmax(150px, auto);
+      grid-template-columns: repeat(6, minmax(0, 1fr)) minmax(140px, auto);
       align-items: end;
       gap: 9px;
-      width: min(830px, 100%);
+      width: min(980px, 100%);
     }
 
     .op-field > span {
@@ -387,6 +468,10 @@
     }
 
     .op-input em { flex: 0 0 auto; margin-left: 4px; color: var(--muted); font-size: 9px; font-style: normal; font-weight: 600; }
+
+    .op-input input[type="date"] { font-size: 11px; font-weight: 600; }
+    .op-input input[type="date"]::-webkit-calendar-picker-indicator { opacity: .65; cursor: pointer; }
+    [data-theme="dark"] .op-input input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); opacity: .7; }
 
     .op-result {
       display: flex;
@@ -1271,6 +1356,7 @@
 
     .ghost-btn:hover { color: var(--text); border-color: var(--line-strong); background: var(--panel-soft); }
     .ghost-btn svg { width: 13px; height: 13px; }
+    .ghost-btn:disabled { opacity: .6; cursor: progress; }
 
     .table-wrap {
       max-height: 360px;
@@ -1397,6 +1483,10 @@
       .kpi-grid { grid-template-columns: repeat(3, 1fr); }
       .kpi-primary { grid-column: span 3; }
       .kpi-ratio { grid-column: span 3; }
+      .operation-bar { flex-direction: column; align-items: stretch; gap: 12px; }
+      .op-intro { min-width: 0; }
+      .op-fields { width: 100%; max-width: none; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .op-result { grid-column: 1 / -1; height: auto; padding: 8px 0 0; border-top: 1px solid var(--line); border-left: 0; }
     }
 
     @media (max-width: 900px) {
@@ -1424,7 +1514,8 @@
       .shell { padding: 18px 16px 36px; }
       .topbar { align-items: flex-start; }
       .brand-sub { max-width: 240px; }
-      .top-actions { gap: 6px; }
+      .top-actions { gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+      .source-control button { padding: 6px 8px; font-size: 11px; }
       .status-pill { display: none; }
       .page-head { flex-direction: column; align-items: stretch; }
       .range-control { align-self: flex-start; }
@@ -1478,6 +1569,10 @@
       </div>
 
       <div class="top-actions">
+        <div class="source-control" role="group" aria-label="Fuente de datos">
+          <button type="button" data-source="api" class="active">API</button>
+          <button type="button" data-source="sim">Simulador</button>
+        </div>
         <div class="status-pill" id="statusPill" title="Estado de la conexión con BERMAD">
           <span class="dot"></span>
           <span id="statusText">Conectando…</span>
@@ -1495,6 +1590,23 @@
           </svg>
           <span>Actualizar</span>
         </button>
+        <button class="icon-btn" id="apiConfigBtn" type="button" aria-label="Configurar backend API" title="Configurar backend API">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h9M19 7h1M4 17h3M13 17h7"></path>
+            <circle cx="16" cy="7" r="2.2"></circle>
+            <circle cx="9" cy="17" r="2.2"></circle>
+          </svg>
+        </button>
+        <div class="api-config hidden" id="apiConfigPanel">
+          <strong>Backend de la API</strong>
+          <input id="apiBaseInput" type="url" placeholder="https://mi-servidor.onrender.com" autocomplete="off" spellcheck="false">
+          <div class="config-error hidden" id="apiConfigError"></div>
+          <div class="config-row">
+            <button type="button" id="apiConfigCancel">Cancelar</button>
+            <button type="button" class="primary" id="apiConfigSave">Guardar</button>
+          </div>
+          <p>Vacío = mismo origen (<code>/api</code>). En Gemini Canvas o Google Sites debes indicar la URL pública del backend (serve.py en Render, Railway o PythonAnywhere).</p>
+        </div>
       </div>
     </header>
 
@@ -1541,6 +1653,12 @@
               <em>días</em>
             </div>
           </label>
+          <label class="op-field" for="inputStart">
+            <span>Fecha de inicio</span>
+            <div class="op-input">
+              <input id="inputStart" type="date">
+            </div>
+          </label>
           <label class="op-field" for="inputRatio">
             <span>Razón objetivo</span>
             <div class="op-input">
@@ -1585,7 +1703,7 @@
             <div class="flow-block">
               <div class="kpi-top">
                 <span class="kpi-label">Gestión de flujos</span>
-                <span class="live-tag">EN VIVO</span>
+                <span class="live-tag" id="liveTag">EN VIVO</span>
               </div>
               <div class="kpi-value flow-value">
                 <span id="kpiFlowCurrent">—</span>
@@ -1623,17 +1741,17 @@
               <span class="ratio-col-label">RL real</span>
               <div class="ratio-col-value">
                 <span id="kpiRatioReal">—</span>
-                <span class="unit">m³/t·d</span>
+                <span class="unit">m³/t</span>
               </div>
-              <span class="ratio-col-sub" id="kpiRatioRealL">— L/t·d</span>
+              <span class="ratio-col-sub" id="kpiRatioRealL">— L/t</span>
             </div>
             <div class="ratio-col ratio-col-target">
               <span class="ratio-col-label">RL ejecutada</span>
               <div class="ratio-col-value">
                 <span id="kpiRatioExec">—</span>
-                <span class="unit">m³/t·d</span>
+                <span class="unit">m³/t</span>
               </div>
-              <span class="ratio-col-sub" id="kpiRatioExecL">— L/t·d</span>
+              <span class="ratio-col-sub" id="kpiRatioExecL">— L/t</span>
             </div>
           </div>
           <div class="ratio-compare-foot">
@@ -1794,22 +1912,25 @@
             </div>
             <div class="plan-progress">
               <div class="plan-progress-head">
-                <span>Avance vs meta diaria</span>
+                <span>Avance vs meta del ciclo</span>
                 <strong id="planProgressPct">—</strong>
               </div>
               <div class="progress-track"><div id="planProgressBar"></div></div>
             </div>
             <div class="plan-list">
               <div><span>Razón actual</span><strong id="planRatio">—</strong></div>
-              <div><span>Meta diaria</span><strong id="planTargetRatio">—</strong></div>
+              <div><span>Meta ciclo</span><strong id="planTargetRatio">—</strong></div>
               <div><span>Volumen periodo</span><strong id="planVolume">—</strong></div>
               <div><span>Brecha de caudal</span><strong id="planGap">—</strong></div>
               <div><span>Proyección ciclo</span><strong id="planProjection">—</strong></div>
-              <div><span>Días al objetivo</span><strong id="planDays">—</strong></div>
+              <div><span>Inicio del ciclo</span><strong id="planStart">—</strong></div>
+              <div><span>Avance del ciclo</span><strong id="planCycle">—</strong></div>
+              <div><span>Días restantes</span><strong id="planDays">—</strong></div>
             </div>
             <div class="plan-note">
-              La RL real se normaliza a 24 h con el volumen medido. La RL ejecutada usa el caudal de
-              diseño = área × tasa de riego. Meta diaria = razón objetivo ÷ días del ciclo.
+              La RL real proyecta el volumen medido a los días del ciclo. La RL ejecutada usa el
+              caudal de diseño = área × tasa de riego × 24 h × días. La fecha de inicio define el
+              avance y los días restantes.
             </div>
           </article>
 
@@ -1861,7 +1982,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M4 19.5h16"></path>
               </svg>
-              Exportar CSV
+              <span id="exportLabel">Exportar CSV</span>
             </button>
           </div>
           <div class="table-wrap">
@@ -1904,13 +2025,12 @@
 
     <footer>
       <div>
-        <strong>Fuente:</strong> BERMAD REST API · proyecto <span id="footerProject">—</span><br>
+        <strong>Fuente:</strong> <span id="footerSource">BERMAD REST API</span> · proyecto <span id="footerProject">—</span><br>
         <span id="footerWindow">Ventana: —</span><br>
         <span id="footerMeta">Actualización automática cada 60 s.</span>
       </div>
       <div class="footer-right">
-        <a href="monitor_flujo_24h.html">Versión anterior (solo navegador)</a><br>
-        <span>La API key permanece en el servidor local.</span>
+        <span id="sourceNote">La API key permanece en el servidor.</span>
       </div>
     </footer>
   </div>
@@ -1919,12 +2039,33 @@
     const $ = (selector) => document.querySelector(selector);
     const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
+    const store = {
+      get(key) {
+        try {
+          return localStorage.getItem(key);
+        } catch {
+          return null;
+        }
+      },
+      set(key, value) {
+        try {
+          localStorage.setItem(key, value);
+        } catch {
+          /* almacenamiento restringido: se mantiene solo en memoria */
+        }
+      },
+    };
+
     const DEFAULT_TZ = 'America/Santiago';
     const PLAN_KEY = 'bermad-leaching-plan';
-    const PLAN_DEFAULTS = { tons: 145000, days: 75, ratio: 0.8, area: 25000, rate: 2.7 };
+    const API_BASE_KEY = 'bermad-api-base';
+    const SOURCE_KEY = 'bermad-source';
+    const PLAN_DEFAULTS = { tons: 145000, days: 75, ratio: 0.8, area: 25000, rate: 2.7, start: '' };
     const state = {
       hours: 24,
       view: 'flow',
+      source: 'api',
+      apiBase: '',
       data: null,
       controller: null,
       loading: false,
@@ -1956,6 +2097,38 @@
 
     function timezone() {
       return state.data?.window?.timezone || DEFAULT_TZ;
+    }
+
+    function todayDateStr() {
+      try {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+          timeZone: timezone(),
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).formatToParts(new Date());
+        const get = (type) => parts.find((part) => part.type === type)?.value;
+        return `${get('year')}-${get('month')}-${get('day')}`;
+      } catch {
+        return new Date().toISOString().slice(0, 10);
+      }
+    }
+
+    function dateOnlyMs(value) {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(value || ''));
+      if (!match) return null;
+      return Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+
+    function fmtDateOnly(value) {
+      const ms = dateOnlyMs(value);
+      if (ms === null) return '—';
+      return new Intl.DateTimeFormat('es-CL', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        timeZone: 'UTC',
+      }).format(new Date(ms));
     }
 
     function dateFormatter(options) {
@@ -2009,7 +2182,7 @@
 
     function setTheme(theme) {
       document.documentElement.dataset.theme = theme;
-      localStorage.setItem('bermad-theme', theme);
+      store.set('bermad-theme', theme);
       const icon = $('#themeIcon');
       if (!icon) return;
       if (theme === 'dark') {
@@ -2020,14 +2193,14 @@
     }
 
     function initialTheme() {
-      const saved = localStorage.getItem('bermad-theme');
+      const saved = store.get('bermad-theme');
       if (saved === 'light' || saved === 'dark') return saved;
       return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
 
     function loadPlan() {
       try {
-        const saved = JSON.parse(localStorage.getItem(PLAN_KEY) || 'null');
+        const saved = JSON.parse(store.get(PLAN_KEY) || 'null');
         if (saved && Number(saved.tons) > 0 && Number(saved.days) > 0 && Number(saved.ratio) > 0) {
           plan = {
             tons: Number(saved.tons),
@@ -2035,13 +2208,16 @@
             ratio: Number(saved.ratio),
             area: Number(saved.area) > 0 ? Number(saved.area) : PLAN_DEFAULTS.area,
             rate: Number(saved.rate) > 0 ? Number(saved.rate) : PLAN_DEFAULTS.rate,
+            start: dateOnlyMs(saved.start) !== null ? saved.start : '',
           };
         }
       } catch {
         plan = { ...PLAN_DEFAULTS };
       }
+      if (!plan.start) plan.start = todayDateStr();
       $('#inputTons').value = plan.tons;
       $('#inputDays').value = plan.days;
+      $('#inputStart').value = plan.start;
       $('#inputRatio').value = plan.ratio;
       $('#inputArea').value = plan.area;
       $('#inputRate').value = plan.rate;
@@ -2054,12 +2230,13 @@
         ratio: Math.max(0.001, Number($('#inputRatio').value) || PLAN_DEFAULTS.ratio),
         area: Math.max(1, Number($('#inputArea').value) || PLAN_DEFAULTS.area),
         rate: Math.max(0.01, Number($('#inputRate').value) || PLAN_DEFAULTS.rate),
+        start: dateOnlyMs($('#inputStart').value) !== null ? $('#inputStart').value : todayDateStr(),
       };
-      localStorage.setItem(PLAN_KEY, JSON.stringify(plan));
+      store.set(PLAN_KEY, JSON.stringify(plan));
     }
 
-    function ratioDigits(value) {
-      return 1;
+    function ratioDigits() {
+      return 2;
     }
 
     function computePlan(data) {
@@ -2071,16 +2248,31 @@
       const dailyTargetVolume = targetVolume / plan.days;
       const targetFlow = dailyTargetVolume / 24;
       const actualFlow = Number(stats.avg) || 0;
-      const targetDailyRatio = plan.ratio / plan.days;
-      const actualDailyRatio = dailyVolume / plan.tons;
-      const compliance = targetDailyRatio > 0 ? (actualDailyRatio / targetDailyRatio) * 100 : 0;
+      const start = plan.start || todayDateStr();
+      const startMs = dateOnlyMs(start);
+      const todayMs = dateOnlyMs(todayDateStr());
+      const elapsedDays = startMs !== null && todayMs !== null
+        ? Math.max(0, Math.min(plan.days, (todayMs - startMs) / 86400000))
+        : 0;
+      const remainingDays = Math.max(0, plan.days - elapsedDays);
+      const cycleDay = Math.min(plan.days, Math.max(1, Math.floor(elapsedDays) + 1));
+      const cycleProgress = plan.days > 0 ? (elapsedDays / plan.days) * 100 : 0;
+      const endDate = startMs !== null
+        ? new Date(startMs + plan.days * 86400000).toISOString().slice(0, 10)
+        : null;
+      const targetCycleRatio = plan.ratio;
+      const actualCycleVolume = dailyVolume * plan.days;
+      const actualCycleRatio = plan.tons > 0 ? actualCycleVolume / plan.tons : 0;
+      const targetToDate = dailyTargetVolume * elapsedDays;
+      const projectedToDate = dailyVolume * elapsedDays;
+      const compliance = targetCycleRatio > 0 ? (actualCycleRatio / targetCycleRatio) * 100 : 0;
       const designFlow = (plan.area * plan.rate) / 1000;
       const designDailyVolume = designFlow * 24;
-      const executedDailyRatio = plan.tons > 0 ? designDailyVolume / plan.tons : 0;
-      const executedCompliance = executedDailyRatio > 0 ? (actualDailyRatio / executedDailyRatio) * 100 : 0;
-      const projection = dailyVolume * plan.days;
-      const remaining = Math.max(0, targetVolume - volume);
-      const daysLeft = dailyVolume > 0.0001 ? remaining / dailyVolume : Infinity;
+      const executedCycleVolume = designDailyVolume * plan.days;
+      const executedCycleRatio = plan.tons > 0 ? executedCycleVolume / plan.tons : 0;
+      const executedCompliance = executedCycleRatio > 0 ? (actualCycleRatio / executedCycleRatio) * 100 : 0;
+      const projection = actualCycleVolume;
+      const remaining = Math.max(0, targetVolume - projection);
 
       return {
         hours,
@@ -2090,16 +2282,24 @@
         dailyTargetVolume,
         targetFlow,
         actualFlow,
-        targetDailyRatio,
-        actualDailyRatio,
+        start,
+        endDate,
+        elapsedDays,
+        remainingDays,
+        cycleDay,
+        cycleProgress,
+        targetToDate,
+        projectedToDate,
+        targetCycleRatio,
+        actualCycleRatio,
         compliance,
         designFlow,
         designDailyVolume,
-        executedDailyRatio,
+        executedCycleVolume,
+        executedCycleRatio,
         executedCompliance,
         projection,
         remaining,
-        daysLeft,
         gapFlow: actualFlow - targetFlow,
       };
     }
@@ -2120,6 +2320,273 @@
       $('#errorBanner').classList.add('hidden');
     }
 
+    function apiUrl(path) {
+      return `${state.apiBase}${path}`;
+    }
+
+    function delay(ms, signal) {
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(resolve, ms);
+        if (!signal) return;
+        signal.addEventListener('abort', () => {
+          clearTimeout(timer);
+          reject(new DOMException('Aborted', 'AbortError'));
+        }, { once: true });
+      });
+    }
+
+    function updateSourceChrome() {
+      const isSim = state.source === 'sim';
+      $$('.source-control button').forEach((button) => {
+        button.classList.toggle('active', button.dataset.source === state.source);
+      });
+      $('#apiConfigBtn').classList.toggle('hidden', isSim);
+      if (isSim) $('#apiConfigPanel').classList.add('hidden');
+      $('#footerSource').textContent = isSim ? 'Simulador local' : 'BERMAD REST API';
+      $('#sourceNote').textContent = isSim
+        ? 'Modo simulador · datos de ejemplo generados en el navegador.'
+        : state.apiBase
+          ? `Backend: ${state.apiBase}`
+          : 'La API key permanece en el servidor.';
+      $('#statusPill').title = isSim
+        ? 'Datos simulados localmente (sin conexión a BERMAD)'
+        : 'Estado de la conexión con BERMAD';
+    }
+
+    function setSource(source) {
+      state.source = source === 'sim' ? 'sim' : 'api';
+      store.set(SOURCE_KEY, state.source);
+      updateSourceChrome();
+      loadDashboard(false);
+    }
+
+    function openApiConfig() {
+      $('#apiBaseInput').value = state.apiBase;
+      $('#apiConfigError').classList.add('hidden');
+      $('#apiConfigPanel').classList.remove('hidden');
+      $('#apiBaseInput').focus();
+    }
+
+    function closeApiConfig() {
+      $('#apiConfigPanel').classList.add('hidden');
+    }
+
+    function saveApiBase() {
+      const value = $('#apiBaseInput').value.trim().replace(/\/+$/, '');
+      if (value && !/^https?:\/\//i.test(value)) {
+        const error = $('#apiConfigError');
+        error.textContent = 'La URL debe comenzar con http:// o https://';
+        error.classList.remove('hidden');
+        return;
+      }
+      state.apiBase = value;
+      store.set(API_BASE_KEY, value);
+      closeApiConfig();
+      updateSourceChrome();
+      if (state.source === 'api') loadDashboard(true);
+    }
+
+    function buildSimulatedDashboard(hours) {
+      const now = new Date();
+      const interval = 2;
+      const tz = 'America/Santiago';
+      const count = Math.max(24, Math.round(hours * 60 / interval));
+      const targetFlow = (plan.tons * plan.ratio / plan.days) / 24;
+      const designFlow = (plan.area * plan.rate) / 1000;
+      const series = [];
+      const pressureSeries = [];
+      const temperatureSeries = [];
+      let volume = 0;
+      let nonzero = 0;
+
+      for (let index = 0; index < count; index += 1) {
+        const t = new Date(now.getTime() - (count - 1 - index) * interval * 60000);
+        const hour = t.getHours() + t.getMinutes() / 60;
+        const curve = 0.9 + 0.12 * Math.sin(((hour - 7) / 24) * Math.PI * 2);
+        const nightDip = hour >= 1 && hour < 5 ? 0.42 : 1;
+        const noise = 0.035 * Math.sin(index * 1.73) + 0.02 * Math.sin(index * 0.41);
+        let value = targetFlow * curve * nightDip * (1 + noise);
+        if (index % 149 === 0) value = 0;
+        if (index % 311 === 0) value *= 0.55;
+        value = Math.max(0, value);
+        if (index === count - 1) value = targetFlow * 0.97;
+        const rounded = Math.round(value * 1000) / 1000;
+        series.push({ t: t.toISOString(), v: rounded });
+        volume += rounded * (interval / 60);
+        if (rounded > 0) nonzero += 1;
+
+        const pressureValue = 45
+          + 2.1 * Math.sin(index / 37)
+          + 1.1 * Math.sin(index / 9)
+          + 0.3 * Math.sin(index * 1.7);
+        const temperatureValue = 50
+          + 3.1 * Math.sin(((hour - 14) / 24) * Math.PI * 2)
+          + 0.9 * Math.sin(index / 21);
+        pressureSeries.push({ t: t.toISOString(), v: Math.round(pressureValue * 100) / 100 });
+        temperatureSeries.push({ t: t.toISOString(), v: Math.round(temperatureValue * 100) / 100 });
+      }
+
+      const summarize = (points) => {
+        const list = points.map((point) => point.v);
+        return {
+          current: list[list.length - 1],
+          min: Number(Math.min(...list).toFixed(2)),
+          max: Number(Math.max(...list).toFixed(2)),
+          avg: Number((list.reduce((sum, value) => sum + value, 0) / list.length).toFixed(2)),
+          points: points.length,
+          lastReading: points[points.length - 1].t,
+        };
+      };
+
+      const center = (points, target) => {
+        if (!points.length) return;
+        const mean = points.reduce((sum, point) => sum + point.v, 0) / points.length;
+        const delta = target - mean;
+        points.forEach((point) => {
+          point.v = Math.round((point.v + delta) * 100) / 100;
+        });
+      };
+
+      center(pressureSeries, 45);
+      center(temperatureSeries, 50);
+
+      const pressureStats = summarize(pressureSeries);
+      const temperatureStats = summarize(temperatureSeries);
+
+      const values = series.map((point) => point.v);
+      const current = values[values.length - 1];
+      const previous = values.length > 1 ? values[values.length - 2] : null;
+      const lastReading = series[series.length - 1].t;
+      const expected = Math.max(1, Math.round(hours * 60 / interval));
+      const stats = {
+        current: Number(current.toFixed(3)),
+        previous: previous === null ? null : Number(previous.toFixed(3)),
+        delta: previous === null ? null : Number((current - previous).toFixed(3)),
+        deltaPct: previous ? Number((((current - previous) / previous) * 100).toFixed(1)) : null,
+        avg: Number((values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(3)),
+        max: Number(Math.max(...values).toFixed(3)),
+        min: Number(Math.min(...values).toFixed(3)),
+        volume: Number(volume.toFixed(3)),
+        points: series.length,
+        expected,
+        coverage: 100,
+        lastReading,
+        staleMinutes: 1,
+        nonzero,
+        entityCount: 1,
+        intervalMinutes: interval,
+      };
+
+      const recentRaw = series.slice(-40).reverse().map((point) => ({
+        t: point.t,
+        v: point.v,
+        entity: 'Caudalímetro El Salvador',
+        entityId: 'SIM-METER-1',
+      }));
+
+      const fromTime = new Date(now.getTime() - hours * 3600000);
+      const voltage = 6.38 - (now.getMinutes() / 60) * 0.03;
+      const battery = {
+        available: true,
+        voltage: Number(voltage.toFixed(2)),
+        min: 6.31,
+        max: 6.42,
+        avg: 6.36,
+        percent: Math.round(((voltage - 5.4) / (6.45 - 5.4)) * 100),
+        full: 6.45,
+        trend: 'discharging',
+        slopeVPerDay: -0.045,
+        cutoff: 5.4,
+        estimatedDays: 21.8,
+        estimatedHours: 523.2,
+        samples: 240,
+        spanHours: 48,
+        lastReading: new Date(now.getTime() - 60000).toISOString(),
+        regimeStart: new Date(now.getTime() - 48 * 3600000).toISOString(),
+        stepDetected: false,
+        windowHours: 48,
+      };
+
+      return {
+        ok: true,
+        generatedAt: now.toISOString(),
+        cached: false,
+        project: {
+          id: 'simulador',
+          name: 'Codelco - División El Salvador',
+          description: 'Datos de ejemplo generados localmente',
+        },
+        window: {
+          hours,
+          timezone: tz,
+          fromLocal: fromTime.toISOString().replace('Z', ''),
+          toLocal: now.toISOString().replace('Z', ''),
+          fromUTC: fromTime.toISOString(),
+          toUTC: now.toISOString(),
+        },
+        device: {
+          id: 'SIM-OMEGA-1',
+          name: 'Omega El Salvador (simulado)',
+          serial: 'SIM-2026-001',
+          status: 'online',
+          timezone: tz,
+          lat: -26.243,
+          long: -69.622,
+          model: 'Omega 4G',
+          firmware: '2.4.1-sim',
+          communicationType: '4G',
+          isOnline: true,
+          lowPower: false,
+          created: new Date(now.getTime() - 240 * 86400000).toISOString(),
+          updated: lastReading,
+          synced: lastReading,
+        },
+        meter: {
+          id: 'SIM-METER-1',
+          name: 'Caudalímetro principal (simulado)',
+          kind: 'flow',
+          role: 'bound',
+          unitId: 'SIM-UNIT-1',
+          logInterval: interval,
+          readInterval: 60,
+          flowUnits: 'm³/h',
+          volUnits: 'm³',
+          slaveId: 1,
+          baudRate: 9600,
+          valueType: 'float',
+          flowRegister: 1,
+          volRegister: 2,
+          leakDetectionTimeFrame: 30,
+          noWaterDelay: 5,
+          synced: lastReading,
+          updated: lastReading,
+        },
+        alerts: [
+          {
+            name: 'Caudal bajo detectado (simulación)',
+            severity: 'warning',
+            dateTime: new Date(now.getTime() - 38 * 60000).toISOString(),
+          },
+        ],
+        series,
+        pressureSeries,
+        temperatureSeries,
+        pressureStats,
+        temperatureStats,
+        recentRaw,
+        stats,
+        battery,
+        api: {
+          base: 'simulador',
+          projectId: 'simulador',
+          unitId: 'SIM-UNIT-1',
+          latencyMs: 120,
+          flowPages: 1,
+          flowTotal: count,
+        },
+      };
+    }
+
     async function loadDashboard(force = false) {
       if (state.controller) state.controller.abort();
       const controller = new AbortController();
@@ -2128,7 +2595,17 @@
       hideError();
 
       try {
-        const url = `/api/dashboard?hours=${state.hours}${force ? '&force=1' : ''}`;
+        if (state.source === 'sim') {
+          await delay(380, controller.signal);
+          const payload = buildSimulatedDashboard(state.hours);
+          if (controller.signal.aborted) return;
+          state.data = payload;
+          state.lastLoadedAt = Date.now();
+          render(payload);
+          return;
+        }
+
+        const url = apiUrl(`/api/dashboard?hours=${state.hours}${force ? '&force=1' : ''}`);
         const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || !payload.ok) {
@@ -2138,9 +2615,15 @@
         state.lastLoadedAt = Date.now();
         render(payload);
       } catch (error) {
-        if (error.name === 'AbortError') return;
+        if (error.name === 'AbortError' || controller.signal.aborted) return;
+        if (state.source !== 'api') return;
         const detail = error.message || 'Error de red';
-        showError(`No se pudo cargar la telemetría: ${detail}. Verifica que el servidor esté ejecutándose con python3 serve.py.`);
+        const hint = state.source === 'api'
+          ? state.apiBase
+            ? `Verifica que ${state.apiBase} esté disponible y permita peticiones desde este origen.`
+            : 'Verifica que el servidor esté ejecutándose (python3 serve.py) o configura la URL del backend con el botón de ajustes.'
+          : 'Vuelve a intentarlo o cambia a modo API.';
+        showError(`No se pudo cargar la telemetría: ${detail}. ${hint}`);
       } finally {
         setLoading(false);
       }
@@ -2169,15 +2652,17 @@
 
       $('#meterName').textContent = meter.name || 'Medidor de caudal';
       $('#meterName2').textContent = meter.name || 'Medidor de caudal';
+      $('#liveTag').textContent = state.source === 'sim' ? 'SIMULADO' : 'EN VIVO';
 
       const statusPill = $('#statusPill');
       statusPill.className = `status-pill ${tone.className}`;
-      $('#statusText').textContent = tone.label;
+      $('#statusText').textContent = state.source === 'sim' ? 'Simulador' : tone.label;
       statusPill.title = `${tone.label} · última lectura ${relative(stats.lastReading)}`;
 
       setBadge($('#deviceStatus'), device.isOnline ? 'En línea' : 'Fuera de línea', device.isOnline ? 'badge-ok' : 'badge-bad');
 
       renderKpis(data);
+      renderEnvironment(data);
       renderBattery(data);
       renderPlan(data);
       renderChart(data);
@@ -2211,17 +2696,18 @@
           : `+${num(flowCurrent - flowTarget)} m³/h sobre la meta`;
       $('#flowProgressBar').style.width = `${Math.max(0, Math.min(100, flowPct))}%`;
 
-      $('#kpiRatioReal').textContent = num(p.actualDailyRatio, ratioDigits(p.actualDailyRatio));
-      $('#kpiRatioRealL').textContent = `${num(p.actualDailyRatio * 1000, 1)} L/t·d`;
-      $('#kpiRatioExec').textContent = num(p.executedDailyRatio, ratioDigits(p.executedDailyRatio));
-      $('#kpiRatioExecL').textContent = `${num(p.executedDailyRatio * 1000, 1)} L/t·d`;
+      $('#kpiRatioReal').textContent = num(p.actualCycleRatio, ratioDigits());
+      $('#kpiRatioRealL').textContent = `${num(p.actualCycleRatio * 1000, 1)} L/t`;
+      $('#kpiRatioExec').textContent = num(p.executedCycleRatio, ratioDigits());
+      $('#kpiRatioExecL').textContent = `${num(p.executedCycleRatio * 1000, 1)} L/t`;
       $('#kpiRatioPct').textContent = `${num(p.executedCompliance, 1)} % de la RL ejecutada`;
       $('#ratioCompareBar').style.width = `${Math.max(0, Math.min(100, p.executedCompliance))}%`;
 
       const ratioCard = document.querySelector('.kpi-ratio');
       if (ratioCard) {
-        ratioCard.title = `RL real = volumen medido ÷ toneladas (normalizado a 24 h) · `
-          + `RL ejecutada = área ${num(plan.area, 0)} m² × tasa ${num(plan.rate, 1)} L/m²·h ÷ 1.000 × 24 h ÷ ${num(plan.tons, 0)} t`;
+        ratioCard.title = `RL real = volumen diario × ${num(plan.days, 0)} días ÷ ${num(plan.tons, 0)} t · `
+          + `RL ejecutada = área ${num(plan.area, 0)} m² × tasa ${num(plan.rate, 1)} L/m²·h × 24 h × ${num(plan.days, 0)} días ÷ 1.000 ÷ ${num(plan.tons, 0)} t · `
+          + `meta ${num(plan.ratio, 2)} m³/t`;
       }
 
       $('#kpiVolume').textContent = num(stats.volume);
@@ -2233,6 +2719,25 @@
       complianceRing.style.setProperty('--p', Math.max(0, Math.min(100, p.compliance)));
       complianceRing.className = 'coverage-ring ' + (p.compliance >= 90 ? 'is-good' : p.compliance >= 60 ? 'is-warn' : 'is-bad');
 
+    }
+
+    function renderEnvironment(data) {
+      const pressure = data.pressureStats || {};
+      const temperature = data.temperatureStats || {};
+
+      const apply = (valueEl, subEl, stats, unit) => {
+        const current = Number(stats.current);
+        if (!Number.isFinite(current)) {
+          valueEl.textContent = '—';
+          subEl.textContent = 'Próximamente';
+          return;
+        }
+        valueEl.textContent = num(current);
+        subEl.textContent = `Prom. ${num(stats.avg)} ${unit} · ${num(stats.points || 0, 0)} lecturas`;
+      };
+
+      apply($('#kpiPressure'), $('#kpiPressureSub'), pressure, 'psi');
+      apply($('#kpiTemperature'), $('#kpiTemperatureSub'), temperature, '°C');
     }
 
     function renderBattery(data) {
@@ -2322,7 +2827,7 @@
 
       const opResult = document.querySelector('.op-result');
       if (opResult) {
-        opResult.title = `Meta: ${num(p.dailyTargetVolume)} m³/día · ${num(p.targetDailyRatio, ratioDigits(p.targetDailyRatio))} m³/t·d`
+        opResult.title = `Meta: ${num(p.dailyTargetVolume)} m³/día · ${num(p.targetCycleRatio, 2)} m³/t`
           + ` · Diseño: ${num(plan.area, 0)} m² × ${num(plan.rate, 1)} L/m²·h`;
       }
 
@@ -2338,9 +2843,10 @@
       }
 
       $('#planProgressPct').textContent = `${num(p.compliance, 1)} %`;
+      $('#planProgressPct').title = `Meta a la fecha: ${num(p.targetToDate, 0)} m³ · proyectado: ${num(p.projectedToDate, 0)} m³`;
       $('#planProgressBar').style.width = `${Math.max(0, Math.min(100, p.compliance))}%`;
-      $('#planRatio').textContent = `${num(p.actualDailyRatio * 1000, 1)} L/t·d`;
-      $('#planTargetRatio').textContent = `${num(p.targetDailyRatio * 1000, 1)} L/t·d`;
+      $('#planRatio').textContent = `${num(p.actualCycleRatio, ratioDigits())} m³/t`;
+      $('#planTargetRatio').textContent = `${num(p.targetCycleRatio, ratioDigits())} m³/t`;
       $('#planVolume').textContent = `${num(p.volume)} m³ · ${num(stats.points || 0, 0)} lect.`;
 
       const gap = p.gapFlow;
@@ -2349,7 +2855,9 @@
         : `−${num(Math.abs(gap))} m³/h bajo la meta`;
 
       $('#planProjection').textContent = `${num(p.projection, 0)} / ${num(p.targetVolume, 0)} m³`;
-      $('#planDays').textContent = Number.isFinite(p.daysLeft) ? `${num(p.daysLeft, 1)} días` : 'Sin caudal';
+      $('#planStart').textContent = `${fmtDateOnly(p.start)} → ${fmtDateOnly(p.endDate)}`;
+      $('#planCycle').textContent = `${num(p.cycleProgress, 1)} % · día ${num(p.cycleDay, 0)} de ${num(plan.days, 0)}`;
+      $('#planDays').textContent = `${num(p.remainingDays, 0)} días`;
     }
 
     function niceMax(value) {
@@ -2374,6 +2882,8 @@
       const empty = $('#chartEmpty');
       const note = $('#chartNote');
       const series = data.series || [];
+      const pressureSeries = Array.isArray(data.pressureSeries) ? data.pressureSeries : [];
+      const temperatureSeries = Array.isArray(data.temperatureSeries) ? data.temperatureSeries : [];
       const planData = computePlan(data);
       const isVolume = state.view === 'volume';
       const isTemperature = state.view === 'temperature';
@@ -2394,6 +2904,10 @@
             return { t: point.t, v: acc };
           });
         }
+      } else if (isPressure) {
+        plotSeries = pressureSeries.map((point) => ({ t: point.t, v: Number(point.v) || 0 }));
+      } else if (isTemperature) {
+        plotSeries = temperatureSeries.map((point) => ({ t: point.t, v: Number(point.v) || 0 }));
       }
 
       const W = Math.max(320, wrap.clientWidth || 800);
@@ -2409,7 +2923,10 @@
 
       const values = plotSeries.map((point) => point.v);
       const maxValue = Math.max(0, ...values);
-      const yMax = niceMax(Math.max(maxValue, targetValue) * 1.12);
+      const isEnvironment = isPressure || isTemperature;
+      const yMax = isEnvironment
+        ? Math.max(10, Math.ceil((Math.max(maxValue, targetValue) * 1.06) / 10) * 10)
+        : niceMax(Math.max(maxValue, targetValue) * 1.12);
       const x = (time) => pad.l + ((time - start) / span) * plotW;
       const y = (value) => pad.t + plotH - (Math.max(0, value) / yMax) * plotH;
 
@@ -2487,6 +3004,11 @@
         targetGroup.classList.add('hidden');
       }
 
+      const envStats = isPressure ? data.pressureStats : isTemperature ? data.temperatureStats : null;
+      const envAvg = envStats && Number.isFinite(Number(envStats.avg))
+        ? Number(envStats.avg)
+        : (values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0);
+
       $('#chartTitle').textContent = isVolume
         ? 'Volumen acumulado vs meta diaria'
         : isTemperature
@@ -2498,9 +3020,9 @@
         isVolume
           ? 'volumen integrado'
           : isTemperature
-            ? 'sin datos (próximamente)'
+            ? (plotSeries.length ? `promedio ${num(envAvg)} °C` : 'sin datos (próximamente)')
             : isPressure
-              ? 'sin datos (próximamente)'
+              ? (plotSeries.length ? `promedio ${num(envAvg)} psi` : 'sin datos (próximamente)')
               : 'caudal instantáneo'
       }`;
       $('#legendActual').textContent = isVolume
@@ -2526,13 +3048,15 @@
         $('#statAvg').textContent = `${num(p.volume)} m³`;
         $('#statMax').textContent = `${num(p.dailyTargetVolume * (hours / 24))} m³`;
       } else if (isTemperature || isPressure) {
+        const envMin = values.length ? Math.min(...values) : 0;
+        const envMax = values.length ? Math.max(...values) : 0;
         $('#statLabel1').textContent = 'Mín.';
         $('#statLabel2').textContent = 'Prom.';
         $('#statLabel3').textContent = 'Máx.';
         $('#statLabel4').textContent = 'Lecturas';
-        $('#statMin').textContent = '—';
-        $('#statAvg').textContent = '—';
-        $('#statMax').textContent = '—';
+        $('#statMin').textContent = values.length ? `${num(envMin)} ${unit}` : '—';
+        $('#statAvg').textContent = values.length ? `${num(envAvg)} ${unit}` : '—';
+        $('#statMax').textContent = values.length ? `${num(envMax)} ${unit}` : '—';
       } else {
         $('#statLabel1').textContent = 'Mín.';
         $('#statLabel2').textContent = 'Prom.';
@@ -2542,7 +3066,7 @@
         $('#statAvg').textContent = `${num(data.stats?.avg)} m³/h`;
         $('#statMax').textContent = `${num(data.stats?.max)} m³/h`;
       }
-      $('#statPoints').textContent = num(data.stats?.points || 0, 0);
+      $('#statPoints').textContent = num(plotSeries.length || 0, 0);
 
       if (plotSeries.length === 0) {
         const emptyTitle = isTemperature
@@ -2561,7 +3085,7 @@
       }
 
       empty.classList.add('hidden');
-      note.classList.toggle('hidden', Boolean(data.stats?.nonzero));
+      note.classList.toggle('hidden', isEnvironment || Boolean(data.stats?.nonzero));
 
       const points = plotSeries.map((point) => ({
         x: x(new Date(point.t).getTime()),
@@ -2778,25 +3302,68 @@
       const api = data.api || {};
       $('#footerProject').textContent = data.project?.id || '—';
       $('#footerWindow').textContent = `Ventana: ${fmtDateTime(window.fromUTC)} → ${fmtDateTime(window.toUTC)} · ${window.timezone || DEFAULT_TZ}`;
-      const generated = data.cached ? 'datos en caché' : 'datos en vivo';
+      const generated = state.source === 'sim'
+        ? 'simulación local'
+        : data.cached ? 'datos en caché' : 'datos en vivo';
       $('#footerMeta').textContent = `Actualizado ${relative(data.generatedAt)} (${generated}) · ${api.latencyMs || 0} ms · ${stats.points || 0} lecturas · actualización automática cada 60 s.`;
     }
 
-    function exportCsv() {
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(() => {
+        link.remove();
+        URL.revokeObjectURL(url);
+      }, 1000);
+    }
+
+    function setExportBusy(busy) {
+      const button = $('#exportBtn');
+      button.disabled = busy;
+      $('#exportLabel').textContent = busy ? 'Exportando…' : 'Exportar CSV';
+    }
+
+    async function exportCsv() {
       const data = state.data;
       if (!data) return;
 
       const hours = data.window?.hours || 24;
       const stamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
-      const url = `/api/export?hours=${encodeURIComponent(hours)}`;
 
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `bermad_ultimas_lecturas_${stamp}.csv`;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      setTimeout(() => link.remove(), 1000);
+      if (state.source === 'sim') {
+        const rows = [['Fecha (UTC)', 'Caudal (m3/h)', 'Estado', 'Medidor']];
+        (data.recentRaw || []).forEach((row) => {
+          rows.push([
+            new Date(row.t).toISOString(),
+            Number(row.v).toFixed(2),
+            Number(row.v) > 0 ? 'Flujo' : 'Sin flujo',
+            row.entity || 'Medidor',
+          ]);
+        });
+        const csv = '\uFEFF' + rows
+          .map((row) => row.map((cell) => `"${String(cell).replaceAll('"', '""')}"`).join(';'))
+          .join('\r\n');
+        downloadBlob(new Blob([csv], { type: 'text/csv;charset=utf-8;' }), `bermad_simulador_${stamp}.csv`);
+        return;
+      }
+
+      const url = apiUrl(`/api/export?hours=${encodeURIComponent(hours)}`);
+      setExportBusy(true);
+      try {
+        const response = await fetch(url, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const blob = await response.blob();
+        downloadBlob(blob, `bermad_ultimas_lecturas_${stamp}.csv`);
+      } catch (error) {
+        showError(`No se pudo exportar el CSV: ${error.message || 'error de red'}.`);
+      } finally {
+        setExportBusy(false);
+      }
     }
 
     function bindEvents() {
@@ -2804,12 +3371,44 @@
       $('#retryBtn').addEventListener('click', () => loadDashboard(true));
       $('#exportBtn').addEventListener('click', exportCsv);
 
+      $$('.source-control button').forEach((button) => {
+        button.addEventListener('click', () => {
+          if (button.dataset.source === state.source) return;
+          setSource(button.dataset.source);
+        });
+      });
+
+      $('#apiConfigBtn').addEventListener('click', () => {
+        if ($('#apiConfigPanel').classList.contains('hidden')) {
+          openApiConfig();
+        } else {
+          closeApiConfig();
+        }
+      });
+      $('#apiConfigCancel').addEventListener('click', closeApiConfig);
+      $('#apiConfigSave').addEventListener('click', saveApiBase);
+      $('#apiBaseInput').addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') saveApiBase();
+        if (event.key === 'Escape') closeApiConfig();
+      });
+
+      document.addEventListener('click', (event) => {
+        const panel = $('#apiConfigPanel');
+        if (panel.classList.contains('hidden')) return;
+        if (panel.contains(event.target) || $('#apiConfigBtn').contains(event.target)) return;
+        closeApiConfig();
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') closeApiConfig();
+      });
+
       $('#themeBtn').addEventListener('click', () => {
         setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
         if (state.data) renderChart(state.data);
       });
 
-      ['#inputTons', '#inputDays', '#inputRatio', '#inputArea', '#inputRate'].forEach((selector) => {
+      ['#inputTons', '#inputDays', '#inputStart', '#inputRatio', '#inputArea', '#inputRate'].forEach((selector) => {
         $(selector).addEventListener('input', () => {
           readPlanInputs();
           if (!state.data) return;
@@ -2858,8 +3457,17 @@
       });
     }
 
+    state.apiBase = (store.get(API_BASE_KEY) || '').trim().replace(/\/+$/, '');
+    const savedSource = store.get(SOURCE_KEY);
+    const servedLocally = /^https?:$/.test(location.protocol)
+      && (location.hostname === '127.0.0.1' || location.hostname === 'localhost');
+    state.source = savedSource === 'api' || savedSource === 'sim'
+      ? savedSource
+      : (state.apiBase || servedLocally ? 'api' : 'sim');
+
     setTheme(initialTheme());
     loadPlan();
+    updateSourceChrome();
     bindEvents();
     loadDashboard(false);
   </script>

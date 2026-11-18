@@ -602,8 +602,8 @@ class Handler(SimpleHTTPRequestHandler):
             except ZoneInfoNotFoundError:
                 tz = timezone.utc
             lines = []
-            lines.append(["Proyecto", payload.get("project", {}).get("id") or ""])
-            lines.append(["Dispositivo", payload.get("device", {}).get("name") or ""])
+            lines.append(["Proyecto", "Codelco - División El Salvador"])
+            lines.append(["Dispositivo", "Medidor principal"])
             lines.append(
                 [
                     "Ventana",
