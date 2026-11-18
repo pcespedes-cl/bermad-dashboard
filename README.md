@@ -1,4 +1,4 @@
-# Codelco - División El Salvador · Gestión de flujo y razón de lixiviación
+# Smart - Lix · Gestión de flujo y razón de lixiviación
 
 Dashboard interactivo para el medidor BERMAD: caudal, volumen, presión,
 temperatura, voltaje y **razón de lixiviación** calculada sobre el ciclo de

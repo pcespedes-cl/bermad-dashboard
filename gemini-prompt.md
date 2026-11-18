@@ -8,7 +8,7 @@ un solo archivo). El resultado debe ser equivalente a
 
 Crea una aplicación web **en un solo archivo HTML** (HTML + CSS + JavaScript
 vanilla, sin dependencias externas) para monitorear un medidor de flujo BERMAD
-en la operación de lixiviación de **Codelco - División El Salvador**.
+en la operación de lixiviación de **Smart - Lix**.
 
 ## Contexto y objetivo
 
@@ -25,7 +25,7 @@ todo debe estar incluido en el archivo (incluido el logo).
 
 ## Identidad visual
 
-- Título visible: **Codelco - División El Salvador**.
+- Título visible: **Smart - Lix**.
 - Logo corporativo en la cabecera, completamente visible, sobre fondo claro u
   oscuro. Embébelo como `data:image/png;base64,...` (no uses rutas relativas).
 - Estética tipo **macOS**: fondo gris muy claro (`#f5f5f7`), tarjetas blancas,
