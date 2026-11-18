@@ -7,6 +7,7 @@ riego completo.
 - **Local (con backend):** <http://localhost:8765/>
 - **Versión de un solo archivo (Gemini Canvas / standalone):**
   `bermad-dashboard-gemini.html`
+- **Artifact listo para Gemini:** `gemini-artifact.html`
 - **Guía para recrearlo en Gemini:** `gemini-prompt.md`
 - **Versión anterior:** `monitor_flujo_24h.html`
 
@@ -234,6 +235,24 @@ Simulador. No necesita el backend para funcionar:
    (por ejemplo, el deploy de `serve.py` en Render).
 3. Elige **API** o **Simulador** en el selector superior.
 4. **Exportar CSV** descarga el archivo en ambos modos.
+
+### Artifact para Gemini
+
+`gemini-artifact.html` es la variante preparada para **Gemini Canvas / Gemini
+Artifacts**:
+
+- Un único archivo autocontenido (sin CDN, sin módulos, sin API keys).
+- Logo embebido y estilos listos para el iframe de Gemini.
+- **Abre directamente en modo Simulador**, así que funciona sin backend ni
+  permisos de red.
+- Incluye el selector **API / Simulador**, la configuración de URL del backend
+  (⚙), las cuatro vistas del gráfico, la fecha de inicio del ciclo y la
+  exportación CSV.
+- Es tolerante a `localStorage` bloqueado y a la navegación en iframe.
+
+Para usarlo en Gemini: adjunta o pega el contenido de `gemini-artifact.html` en
+Canvas y pídele que lo ejecute como artifact. Si Gemini pide regenerarlo, usa
+`gemini-prompt.md` como especificación.
 
 `bermad-dashboard-standalone.html` es la misma aplicación autocontenida, pensada
 para abrirse directamente o alojarse en un sitio estático.
