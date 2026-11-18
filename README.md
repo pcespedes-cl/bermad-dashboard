@@ -22,8 +22,10 @@ El selector de la esquina superior derecha alterna entre dos fuentes:
 
 - El modo elegido se recuerda en `localStorage` (`bermad-source`).
 - En `localhost` el modo inicial es **API**; si el archivo se abre directamente
-  (`file://`) o se publica en un hosting estático, el modo inicial es
-  **Simulador**.
+  (`file://`) el modo inicial es **Simulador**, porque no existe un backend en el
+  origen del archivo.
+- Si desde `file://` se elige **API** sin URL configurada, el panel muestra una
+  instrucción para abrir <http://127.0.0.1:8765/> o configurar el backend con ⚙.
 - El botón de ajustes (⚙) permite indicar la **URL pública del backend** cuando
   el dashboard no se sirve desde el mismo origen. Se guarda en
   `bermad-api-base`. Vacío = mismo origen (`/api`).

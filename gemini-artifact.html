@@ -2363,9 +2363,14 @@
     }
 
     function setSource(source) {
-      state.source = source === 'sim' ? 'sim' : 'api';
+      const next = source === 'sim' ? 'sim' : 'api';
+      state.source = next;
       store.set(SOURCE_KEY, state.source);
       updateSourceChrome();
+      if (next === 'api' && !state.apiBase && location.protocol === 'file:') {
+        showError('Para consultar la API abre http://127.0.0.1:8765/ o configura la URL del backend con el botón de ajustes (⚙).');
+        return;
+      }
       loadDashboard(false);
     }
 
@@ -3468,8 +3473,6 @@
 
     state.apiBase = (store.get(API_BASE_KEY) || '').trim().replace(/\/+$/, '');
     const savedSource = store.get(SOURCE_KEY);
-    const servedLocally = /^https?:$/.test(location.protocol)
-      && (location.hostname === '127.0.0.1' || location.hostname === 'localhost');
     // Artifact: abre siempre en Simulador la primera vez (sin red ni backend).
     state.source = savedSource === 'api' || savedSource === 'sim'
       ? savedSource
