@@ -1083,9 +1083,9 @@
       grid-template-columns: minmax(0, 1.95fr) minmax(300px, .78fr);
       gap: 16px;
       margin-bottom: 16px;
-      align-items: start;
+      align-items: stretch;
     }
-    .left-stack { display: grid; gap: 16px; }
+    .left-stack { display: grid; gap: 16px; grid-template-rows: auto 1fr; }
 
     .side-stack { display: grid; gap: 16px; }
 
@@ -1493,7 +1493,7 @@
       align-items: start;
     }
 
-    .table-card { padding: 19px 19px 13px; }
+    .table-card { padding: 19px 19px 13px; display: flex; flex-direction: column; }
 
     .ghost-btn {
       flex: 0 0 auto;
@@ -1523,9 +1523,11 @@
     #exportBtn svg { stroke: #0a3d1a; }
 
     .table-wrap {
-      max-height: 360px;
+      max-height: none;
       margin-top: 12px;
       overflow: auto;
+      flex: 1 1 auto;
+      min-height: 0;
       border: 1px solid var(--line);
       border-radius: 12px;
     }
