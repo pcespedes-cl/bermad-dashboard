@@ -7,6 +7,7 @@ hace de proxy hacia BERMAD. Render ejecuta ese proceso y le asigna una URL HTTPS
 ## Estado actual (repositorio ya publicado)
 
 - Repositorio: <https://github.com/pcespedes-cl/bermad-dashboard>
+- **Servicio en producción:** <https://bermad-dashboard.onrender.com>
 - Despliegue en un clic (Blueprint):
   <https://render.com/deploy?repo=https://github.com/pcespedes-cl/bermad-dashboard>
 

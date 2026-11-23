@@ -57,6 +57,8 @@ puerto HTTP. La configuración lista para **Render** está en `render.yaml`
 
 Guía paso a paso: **[DEPLOY.md](DEPLOY.md)**. Resumen:
 
+- **Producción actual:** <https://bermad-dashboard.onrender.com>
+
 1. Subir el repositorio a GitHub (sin `.env`).
 2. Render → **New + → Blueprint** → elegir el repositorio.
 3. Definir `BERMAD_API_KEY` cuando Render la solicite.

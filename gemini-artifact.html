@@ -3680,7 +3680,7 @@
       });
     }
 
-    state.apiBase = (store.get(API_BASE_KEY) || '').trim().replace(/\/+$/, '');
+    state.apiBase = (store.get(API_BASE_KEY) || 'https://bermad-dashboard.onrender.com').trim().replace(/\/+$/, '');
     const savedSource = store.get(SOURCE_KEY);
     state.source = savedSource === 'api' || savedSource === 'sim'
       ? savedSource
