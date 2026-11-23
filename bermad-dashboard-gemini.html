@@ -856,22 +856,25 @@
     .ratio-compare {
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 11px;
-      margin-top: 10px;
+      gap: 18px;
+      align-items: stretch;
     }
 
     .ratio-col { min-width: 0; }
 
     .ratio-col + .ratio-col {
-      padding-left: 11px;
+      padding-left: 18px;
       border-left: 1px solid var(--line);
     }
 
     .ratio-col-label {
+      display: flex;
+      align-items: center;
+      min-height: 30px;
       color: var(--muted);
       font-size: 12px;
       font-weight: 800;
-      letter-spacing: .06em;
+      letter-spacing: .08em;
       text-transform: uppercase;
       white-space: nowrap;
     }
@@ -879,9 +882,9 @@
     .ratio-col-value {
       display: flex;
       align-items: baseline;
-      gap: 4px;
-      margin-top: 4px;
-      font-size: 33px;
+      gap: 5px;
+      margin-top: 7px;
+      font-size: 38px;
       font-weight: 800;
       line-height: 1;
       letter-spacing: -.045em;
@@ -897,7 +900,7 @@
 
     .ratio-col-sub {
       display: block;
-      margin-top: 4px;
+      margin-top: 5px;
       color: var(--muted);
       font-size: 12.5px;
     }
@@ -908,7 +911,7 @@
       margin-top: auto;
       padding-top: 8px;
       color: var(--muted);
-      font-size: 10.5px;
+      font-size: 12.5px;
       font-weight: 600;
     }
 
@@ -1887,20 +1890,19 @@
         </article>
 
         <article class="kpi kpi-ratio">
-          <div class="kpi-top">
-            <span class="kpi-label">Razón de lixiviación</span>
-            <span class="kpi-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17.5 8.5 12l4 4L21 6.5"></path><path d="M15.5 6.5H21V12"></path></svg>
-            </span>
-          </div>
           <div class="ratio-compare">
             <div class="ratio-col">
-              <span class="ratio-col-label">RL real</span>
+              <div class="kpi-top">
+                <span class="kpi-label">Razón de lixiviación</span>
+                <span class="kpi-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17.5 8.5 12l4 4L21 6.5"></path><path d="M15.5 6.5H21V12"></path></svg>
+                </span>
+              </div>
               <div class="ratio-col-value">
                 <span id="kpiRatioReal">—</span>
                 <span class="unit">m³/t</span>
               </div>
-              <span class="ratio-col-sub" id="kpiRatioRealL">— L/t</span>
+              <span class="ratio-col-sub">RL real · <span id="kpiRatioRealL">— L/t</span></span>
             </div>
             <div class="ratio-col ratio-col-target">
               <span class="ratio-col-label">RL ejecutada</span>
