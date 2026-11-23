@@ -25,6 +25,8 @@
       --brand-soft: #e5f1ff;
       --green: #34c759;
       --green-soft: #e8f7ec;
+      --progress: #30d158;
+      --progress-2: #00e676;
       --amber: #ff9500;
       --amber-soft: #fff4e5;
       --red: #ff3b30;
@@ -58,6 +60,8 @@
       --brand-soft: rgba(10, 132, 255, .16);
       --green: #30d158;
       --green-soft: rgba(48, 209, 88, .16);
+      --progress: #30d158;
+      --progress-2: #00e676;
       --amber: #ff9f0a;
       --amber-soft: rgba(255, 159, 10, .16);
       --red: #ff453a;
@@ -691,7 +695,8 @@
       width: 0;
       height: 100%;
       border-radius: inherit;
-      background: var(--green);
+      background: linear-gradient(90deg, var(--progress), var(--progress-2));
+      box-shadow: 0 0 10px rgba(0, 230, 118, .5);
       transition: width .45s ease, background .2s ease;
     }
 
@@ -831,8 +836,8 @@
       width: 0;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, rgba(255, 255, 255, .7), #ffffff);
-      box-shadow: 0 0 12px rgba(255, 255, 255, .55);
+      background: linear-gradient(90deg, var(--progress), var(--progress-2));
+      box-shadow: 0 0 12px rgba(0, 230, 118, .55);
       transition: width .45s ease;
     }
 
@@ -917,7 +922,8 @@
       width: 0;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      background: linear-gradient(90deg, var(--progress), var(--progress-2));
+      box-shadow: 0 0 12px rgba(0, 230, 118, .5);
       transition: width .45s ease;
     }
 
@@ -1257,7 +1263,8 @@
       width: 0;
       height: 100%;
       border-radius: inherit;
-      background: linear-gradient(90deg, var(--brand), var(--brand-2));
+      background: linear-gradient(90deg, var(--progress), var(--progress-2));
+      box-shadow: 0 0 12px rgba(0, 230, 118, .5);
       transition: width .45s ease;
     }
 
