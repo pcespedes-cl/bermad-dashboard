@@ -1769,7 +1769,8 @@
       align-items: flex-end;
       gap: 10px;
       flex-wrap: wrap;
-      padding: 6px 8px;
+      margin-top: 10px;
+      padding: 8px 10px;
       border: 1px solid var(--line);
       border-radius: 10px;
       background: var(--panel-soft);
@@ -2163,12 +2164,13 @@
                 <span class="legend-item"><span class="legend-gap"></span>Sin datos</span>
               </div>
             </div>
-            <div class="date-range" id="dateRange">
-              <label>Inicio de análisis <input type="date" id="dateFrom"></label>
-              <label>Término de análisis <input type="date" id="dateTo"></label>
-              <button type="button" class="ghost-btn" id="applyRangeBtn">Aplicar</button>
-              <button type="button" class="ghost-btn" id="clearRangeBtn">Limpiar</button>
-            </div>
+          </div>
+
+          <div class="date-range" id="dateRange">
+            <label>Inicio de análisis <input type="date" id="dateFrom"></label>
+            <label>Término de análisis <input type="date" id="dateTo"></label>
+            <button type="button" class="ghost-btn" id="applyRangeBtn">Aplicar</button>
+            <button type="button" class="ghost-btn" id="clearRangeBtn">Limpiar</button>
           </div>
 
           <div class="chart-wrap" id="chartWrap">
