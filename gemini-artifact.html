@@ -2217,6 +2217,7 @@
               <circle id="chartDot" r="4.5" cx="0" cy="0" class="hidden"></circle>
               <g id="chartAxis"></g>
               <rect id="chartHover" x="0" y="0" width="0" height="0" fill="transparent"></rect>
+              <rect id="chartZoom" x="0" y="0" width="0" height="0" fill="rgba(0, 255, 136, .18)" stroke="#39ff8e" stroke-width="1.5" stroke-dasharray="4 3" class="hidden"></rect>
             </svg>
             <div class="chart-tooltip hidden" id="chartTooltip">
               <strong id="tooltipFlow">— m³/h</strong>
@@ -3555,11 +3556,24 @@
       hover.setAttribute('y', pad.t);
       hover.setAttribute('width', plotW);
       hover.setAttribute('height', plotH);
+      hover.setAttribute('pointer-events', 'all');
+      hover.style.cursor = 'crosshair';
 
+      const zoomRect = $('#chartZoom');
+      let zoomStart = null;
       hover.onpointermove = (event) => {
         const rect = svg.getBoundingClientRect();
         const pointerX = ((event.clientX - rect.left) / rect.width) * W;
         const pointerY = ((event.clientY - rect.top) / rect.height) * H;
+
+        if (zoomStart !== null) {
+          const px = Math.max(pad.l, Math.min(W - pad.r, pointerX));
+          const x0 = Math.min(zoomStart, px);
+          const x1 = Math.max(zoomStart, px);
+          zoomRect.setAttribute('x', x0);
+          zoomRect.setAttribute('width', x1 - x0);
+          return;
+        }
 
         if (pointerX < pad.l || pointerX > W - pad.r) {
           tooltip.classList.add('hidden');
@@ -3615,10 +3629,49 @@
       };
 
       hover.onpointerleave = () => {
+        if (zoomStart !== null) return;
         tooltip.classList.add('hidden');
         crosshair.classList.add('hidden');
         dot.setAttribute('cx', lastPoint.x);
         dot.setAttribute('cy', lastPoint.y);
+      };
+
+      hover.onpointerdown = (event) => {
+        const rect = svg.getBoundingClientRect();
+        const pointerX = ((event.clientX - rect.left) / rect.width) * W;
+        if (pointerX < pad.l || pointerX > W - pad.r) return;
+        zoomStart = pointerX;
+        zoomRect.setAttribute('x', zoomStart);
+        zoomRect.setAttribute('y', pad.t);
+        zoomRect.setAttribute('width', 0);
+        zoomRect.setAttribute('height', plotH);
+        zoomRect.classList.remove('hidden');
+        hover.setPointerCapture(event.pointerId);
+        event.preventDefault();
+      };
+      hover.onpointerup = (event) => {
+        if (zoomStart === null) return;
+        const rect = svg.getBoundingClientRect();
+        const pointerX = Math.max(pad.l, Math.min(W - pad.r, ((event.clientX - rect.left) / rect.width) * W));
+        const x0 = Math.min(zoomStart, pointerX);
+        const x1 = Math.max(zoomStart, pointerX);
+        zoomRect.classList.add('hidden');
+        zoomStart = null;
+        try { hover.releasePointerCapture(event.pointerId); } catch (e) {}
+        if (x1 - x0 < 8) return;
+        const t0 = start + ((x0 - pad.l) / plotW) * span;
+        const t1 = start + ((x1 - pad.l) / plotW) * span;
+        const d0 = new Date(t0).toISOString().slice(0, 10);
+        const d1 = new Date(t1).toISOString().slice(0, 10);
+        const df = $('#dateFrom'); const dt = $('#dateTo');
+        if (df) df.value = d0;
+        if (dt) dt.value = d1;
+        state.rangeFrom = `${d0}T00:00:00`;
+        state.rangeTo = `${d1}T23:59:59`;
+        state.live = false;
+        const liveBtn = document.querySelector('.live-btn');
+        if (liveBtn) liveBtn.classList.remove('active');
+        loadDashboard(true);
       };
 
     }
