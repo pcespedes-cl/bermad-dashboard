@@ -1130,6 +1130,27 @@
       box-shadow: var(--shadow-sm);
     }
 
+    .var2-select {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      font-size: 9px;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .var2-select select {
+      border: 1px solid var(--line-strong);
+      border-radius: 7px;
+      padding: 4px 6px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
     .chart-legend {
       display: flex;
       align-items: center;
@@ -2175,8 +2196,19 @@
                 <button type="button" data-view="temperature">Temperatura</button>
                 <button type="button" data-view="pressure">Presión</button>
               </div>
+              <label class="var2-select">
+                <span>2ª variable</span>
+                <select id="var2Select">
+                  <option value="none">Ninguna</option>
+                  <option value="flow">Caudal</option>
+                  <option value="volume">Volumen</option>
+                  <option value="temperature">Temperatura</option>
+                  <option value="pressure">Presión</option>
+                </select>
+              </label>
               <div class="chart-legend" aria-hidden="true">
-                <span class="legend-item"><span class="legend-line"></span><span id="legendActual">Caudal</span></span>
+                <span class="legend-item"><span class="legend-line" style="background:#39ff8e"></span><span id="legendActual">Caudal</span></span>
+                <span class="legend-item" id="legendSecondItem" style="display:none"><span class="legend-line" style="background:#ff9f0a"></span><span id="legendSecond">—</span></span>
                 <span class="legend-item"><span class="legend-target"></span><span id="legendTarget">Meta</span></span>
                 <span class="legend-item"><span class="legend-gap"></span>Sin datos</span>
               </div>
@@ -2210,6 +2242,7 @@
               <rect id="gapRect" x="0" y="0" width="0" height="0" fill="url(#gapPattern)" color="var(--muted-2)"></rect>
               <path id="chartArea" d=""></path>
               <path id="chartLine" d=""></path>
+              <path id="chartLine2" d="" fill="none" stroke="#ff9f0a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path>
               <line id="chartCrosshair" x1="0" y1="0" x2="0" y2="0" class="hidden"></line>
               <circle id="chartDot" r="4.5" cx="0" cy="0" class="hidden"></circle>
               <g id="chartAxis"></g>
@@ -2408,6 +2441,7 @@
       rangeFrom: null,
       rangeTo: null,
       view: 'flow',
+      var2: 'none',
       source: 'api',
       apiBase: '',
       data: null,
@@ -3264,12 +3298,36 @@
       return niceFraction * (10 ** exponent);
     }
 
+    function seriesFor(varName, data, intervalMin) {
+      const series = data.series || [];
+      const pressureSeries = Array.isArray(data.pressureSeries) ? data.pressureSeries : [];
+      const temperatureSeries = Array.isArray(data.temperatureSeries) ? data.temperatureSeries : [];
+      if (varName === 'flow') return series.map((point) => ({ t: point.t, v: Number(point.v) || 0 }));
+      if (varName === 'volume') {
+        let acc = 0;
+        return series.map((point) => {
+          const v = Number(point.v) || 0;
+          acc += v * (intervalMin / 60);
+          return { t: point.t, v: acc };
+        });
+      }
+      if (varName === 'pressure') return pressureSeries.map((point) => ({ t: point.t, v: Number(point.v) || 0 }));
+      if (varName === 'temperature') return temperatureSeries.map((point) => ({ t: point.t, v: Number(point.v) || 0 }));
+      return [];
+    }
+    function varLabel(varName) {
+      return varName === 'flow' ? 'Caudal' : varName === 'volume' ? 'Volumen' : varName === 'pressure' ? 'Presión' : varName === 'temperature' ? 'Temperatura' : '';
+    }
+    function varUnit(varName) {
+      return varName === 'flow' ? 'm³/h' : varName === 'volume' ? 'm³' : varName === 'pressure' ? 'psi' : varName === 'temperature' ? '°C' : '';
+    }
     function renderChart(data) {
       const wrap = $('#chartWrap');
       const svg = $('#chart');
       const grid = $('#chartGrid');
       const axis = $('#chartAxis');
       const line = $('#chartLine');
+      const line2 = $('#chartLine2');
       const area = $('#chartArea');
       const gapRect = $('#gapRect');
       const tooltip = $('#chartTooltip');
@@ -3287,52 +3345,50 @@
       const isFlow = !isVolume && !isTemperature && !isPressure;
       const intervalMin = Number(data.stats?.intervalMinutes || 2);
       const hours = Number(data.window?.hours || state.hours || 24);
-      const targetValue = isVolume ? planData.dailyTargetVolume * (hours / 24) : (isFlow ? planData.targetFlow : 0);
-      const unit = isVolume ? 'm³' : isTemperature ? '°C' : isPressure ? 'psi' : 'm³/h';
+      const var1Name = isVolume ? 'volume' : isTemperature ? 'temperature' : isPressure ? 'pressure' : 'flow';
+      const var2Name = (state.var2 && state.var2 !== 'none' && state.var2 !== var1Name) ? state.var2 : null;
+      const targetValue = (var1Name === 'volume') ? planData.dailyTargetVolume * (hours / 24) : (var1Name === 'flow' ? planData.targetFlow : 0);
+      const unit = varUnit(var1Name);
 
-      let plotSeries = [];
-      if (isFlow || isVolume) {
-        plotSeries = series.map((point) => ({ t: point.t, v: Number(point.v) || 0 }));
-        if (isVolume) {
-          let acc = 0;
-          plotSeries = plotSeries.map((point) => {
-            acc += point.v * (intervalMin / 60);
-            return { t: point.t, v: acc };
-          });
-        }
-      } else if (isPressure) {
-        plotSeries = pressureSeries.map((point) => ({ t: point.t, v: Number(point.v) || 0 }));
-      } else if (isTemperature) {
-        plotSeries = temperatureSeries.map((point) => ({ t: point.t, v: Number(point.v) || 0 }));
-      }
+      let plotSeries = seriesFor(var1Name, data, intervalMin);
+      let plotSeries2 = var2Name ? seriesFor(var2Name, data, intervalMin) : [];
 
       if (state.live && plotSeries.length) {
         plotSeries = [plotSeries[plotSeries.length - 1]];
+      }
+      if (state.live && plotSeries2.length) {
+        plotSeries2 = [plotSeries2[plotSeries2.length - 1]];
       }
 
       const W = Math.max(320, wrap.clientWidth || 800);
       const H = Math.max(240, wrap.clientHeight || 338);
       svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
 
-      const pad = { l: 58, r: 18, t: 18, b: 36 };
+      const hasSecond = !!var2Name;
+      const pad = { l: 58, r: hasSecond ? 58 : 18, t: 18, b: 36 };
       const plotW = W - pad.l - pad.r;
       const plotH = H - pad.t - pad.b;
       const start = new Date(data.window.fromUTC).getTime();
       const end = new Date(data.window.toUTC).getTime();
       const span = Math.max(1, end - start);
 
-      const values = plotSeries.map((point) => point.v);
-      const maxValue = Math.max(0, ...values);
-      const isEnvironment = isPressure || isTemperature;
-      const yMax = isEnvironment
-        ? Math.max(10, Math.ceil((Math.max(maxValue, targetValue) * 1.06) / 10) * 10)
-        : niceMax(Math.max(maxValue, targetValue) * 1.12);
+      const values1 = plotSeries.map((point) => point.v);
+      const maxValue1 = Math.max(0, ...values1);
+      const isEnvironment1 = (var1Name === 'pressure' || var1Name === 'temperature');
+      const yMax1 = isEnvironment1
+        ? Math.max(10, Math.ceil((Math.max(maxValue1, targetValue) * 1.06) / 10) * 10)
+        : niceMax(Math.max(maxValue1, targetValue) * 1.12);
+      const values2 = plotSeries2.map((point) => point.v);
+      const maxValue2 = Math.max(0, ...values2);
+      const yMax2 = hasSecond ? niceMax(Math.max(maxValue2, 0) * 1.12 || 1) : 1;
       const x = (time) => pad.l + ((time - start) / span) * plotW;
-      const y = (value) => pad.t + plotH - (Math.max(0, value) / yMax) * plotH;
+      const y = (value) => pad.t + plotH - (Math.max(0, value) / yMax1) * plotH;
+      const y2 = (value) => pad.t + plotH - (Math.max(0, value) / yMax2) * plotH;
 
       grid.innerHTML = '';
       axis.innerHTML = '';
       line.setAttribute('d', '');
+      line2.setAttribute('d', '');
       area.setAttribute('d', '');
       gapRect.setAttribute('width', 0);
       gapRect.setAttribute('height', 0);
@@ -3362,6 +3418,41 @@
         label.textContent = num(value, 1);
         axis.appendChild(label);
       }
+
+      // Eje derecho (segunda variable)
+      if (hasSecond) {
+        const rightGridCount = 4;
+        for (let index = 0; index <= rightGridCount; index += 1) {
+          const value = (yMax2 / rightGridCount) * index;
+          const yPos = y2(value);
+          const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          label.setAttribute('x', W - pad.r + 9);
+          label.setAttribute('y', yPos + 3.5);
+          label.setAttribute('text-anchor', 'start');
+          label.setAttribute('class', 'axis-text');
+          label.textContent = num(value, 1);
+          axis.appendChild(label);
+        }
+        // Etiqueta de la variable en el eje derecho
+        const rightTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        rightTitle.setAttribute('x', W - pad.r + 9);
+        rightTitle.setAttribute('y', pad.t - 4);
+        rightTitle.setAttribute('text-anchor', 'start');
+        rightTitle.setAttribute('class', 'axis-text');
+        rightTitle.setAttribute('fill', '#ff9f0a');
+        rightTitle.textContent = `${varLabel(var2Name)} (${varUnit(var2Name)})`;
+        axis.appendChild(rightTitle);
+      }
+
+      // Etiqueta de la variable en el eje izquierdo
+      const leftTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      leftTitle.setAttribute('x', pad.l - 9);
+      leftTitle.setAttribute('y', pad.t - 4);
+      leftTitle.setAttribute('text-anchor', 'end');
+      leftTitle.setAttribute('class', 'axis-text');
+      leftTitle.setAttribute('fill', '#39ff8e');
+      leftTitle.textContent = `${varLabel(var1Name)} (${varUnit(var1Name)})`;
+      axis.appendChild(leftTitle);
 
       const tickCount = 6;
       for (let index = 0; index <= tickCount; index += 1) {
@@ -3513,6 +3604,19 @@
       empty.classList.add('hidden');
       note.classList.toggle('hidden', isEnvironment || Boolean(data.stats?.nonzero));
 
+      const legendActual = $('#legendActual');
+      const legendSecond = $('#legendSecond');
+      const legendSecondItem = $('#legendSecondItem');
+      if (legendActual) legendActual.textContent = varLabel(var1Name);
+      if (legendSecond && legendSecondItem) {
+        if (hasSecond) {
+          legendSecond.textContent = varLabel(var2Name);
+          legendSecondItem.style.display = '';
+        } else {
+          legendSecondItem.style.display = 'none';
+        }
+      }
+
       const points = plotSeries.map((point) => ({
         x: x(new Date(point.t).getTime()),
         y: y(point.v),
@@ -3531,6 +3635,30 @@
         }
         line.setAttribute('d', path);
         area.setAttribute('d', `${path} L ${points[points.length - 1].x.toFixed(2)} ${pad.t + plotH} L ${points[0].x.toFixed(2)} ${pad.t + plotH} Z`);
+      }
+
+      // Segunda variable
+      if (hasSecond && plotSeries2.length) {
+        const points2 = plotSeries2.map((point) => ({
+          x: x(new Date(point.t).getTime()),
+          y: y2(point.v),
+          value: point.v,
+          t: point.t,
+        }));
+        if (points2.length === 1) {
+          const p2 = points2[0];
+          line2.setAttribute('d', `M ${p2.x} ${p2.y} L ${W - pad.r} ${p2.y}`);
+        } else {
+          let path2 = `M ${points2[0].x.toFixed(2)} ${points2[0].y.toFixed(2)}`;
+          for (let index = 1; index < points2.length; index += 1) {
+            path2 += ` L ${points2[index].x.toFixed(2)} ${points2[index].y.toFixed(2)}`;
+          }
+          line2.setAttribute('d', path2);
+        }
+        line2.classList.remove('hidden');
+      } else {
+        line2.classList.add('hidden');
+        line2.setAttribute('d', '');
       }
 
       const lastPoint = points[points.length - 1];
@@ -3598,7 +3726,13 @@
         dot.setAttribute('cy', nearest.y);
         dot.classList.remove('hidden');
 
-        $('#tooltipFlow').textContent = `${num(nearest.value)} ${unit}`;
+        const nearest2 = hasSecond ? plotSeries2.reduce((best, point) => {
+          const pt = { x: x(new Date(point.t).getTime()) };
+          return (!best || Math.abs(pt.x - pointerX) < Math.abs(best.x - pointerX)) ? { ...point, x: pt.x } : best;
+        }, null) : null;
+        $('#tooltipFlow').textContent = hasSecond
+          ? `${varLabel(var1Name)} ${num(nearest.value)} ${varUnit(var1Name)} · ${varLabel(var2Name)} ${num(nearest2 ? nearest2.v : 0)} ${varUnit(var2Name)}`
+          : `${num(nearest.value)} ${unit}`;
         $('#tooltipTime').textContent = `${fmtDateTime(nearest.t)} · ${relative(nearest.t)}`;
         tooltip.classList.remove('hidden');
 
@@ -4001,6 +4135,8 @@
       'tiempo de espera agotado (90 s)': 'timeout (90 s)',
       'Inicio de análisis': 'Analysis start',
       'Término de análisis': 'Analysis end',
+      '2ª variable': '2nd variable',
+      'Ninguna': 'None',
       'Aplicar': 'Apply',
       'Limpiar': 'Clear',
       'Cambiar tema': 'Toggle theme',
@@ -4200,6 +4336,14 @@
           if (state.data) renderChart(state.data);
         });
       });
+
+      const var2Select = $('#var2Select');
+      if (var2Select) {
+        var2Select.addEventListener('change', () => {
+          state.var2 = var2Select.value || 'none';
+          if (state.data) renderChart(state.data);
+        });
+      }
 
       $$('.range-control button[data-hours]').forEach((button) => {
         button.addEventListener('click', () => {
