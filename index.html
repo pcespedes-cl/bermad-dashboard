@@ -3552,7 +3552,7 @@
 
     function renderMeter(data) {
       const meter = data.meter || {};
-      setBadge($('#meterRole'), meter.role ? `Rol ${meter.role}` : '—', meter.role === 'bound' ? 'badge-ok' : '');
+      setBadge($('#meterRole'), meter.role ? `Rol ${meter.role}` : '—', meter.role === 'bound' ? 'badge-live' : '');
       $('#mtKind').textContent = meter.kind ? meter.kind.toUpperCase() : '—';
       $('#mtLog').textContent = meter.logInterval ? `${meter.logInterval} min` : '—';
       $('#mtRead').textContent = meter.readInterval ? `${meter.readInterval} s` : '—';
