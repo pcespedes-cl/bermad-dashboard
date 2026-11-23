@@ -2190,12 +2190,15 @@
               <p id="chartSubtitle">Últimas 24 horas · resolución 2 min</p>
             </div>
             <div class="chart-tools">
-              <div class="chart-toggle" role="group" aria-label="Vista del gráfico">
-                <button type="button" data-view="flow" class="active">Caudal</button>
-                <button type="button" data-view="volume">Volumen</button>
-                <button type="button" data-view="temperature">Temperatura</button>
-                <button type="button" data-view="pressure">Presión</button>
-              </div>
+              <label class="var2-select">
+                <span>1ª variable</span>
+                <div class="chart-toggle" role="group" aria-label="Vista del gráfico">
+                  <button type="button" data-view="flow" class="active">Caudal</button>
+                  <button type="button" data-view="volume">Volumen</button>
+                  <button type="button" data-view="temperature">Temperatura</button>
+                  <button type="button" data-view="pressure">Presión</button>
+                </div>
+              </label>
               <label class="var2-select">
                 <span>2ª variable</span>
                 <select id="var2Select">
@@ -4137,6 +4140,7 @@
       'tiempo de espera agotado (90 s)': 'timeout (90 s)',
       'Inicio de análisis': 'Analysis start',
       'Término de análisis': 'Analysis end',
+      '1ª variable': '1st variable',
       '2ª variable': '2nd variable',
       'Ninguna': 'None',
       'Aplicar': 'Apply',
