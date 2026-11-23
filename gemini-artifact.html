@@ -2574,6 +2574,7 @@
       $('#inputTons').value = plan.tons;
       $('#inputDays').value = plan.days;
       $('#inputStart').value = plan.start;
+      const _df2 = $('#dateFrom'); if (_df2 && !_df2.value) _df2.value = plan.start;
       $('#inputRatio').value = plan.ratio;
       $('#inputArea').value = plan.area;
       $('#inputRate').value = plan.rate;
@@ -4228,6 +4229,8 @@
 
     setTheme(initialTheme());
     loadPlan();
+    const _df = $('#dateFrom'); if (_df && !_df.value) _df.value = plan.start || todayDateStr();
+    const _dt = $('#dateTo'); if (_dt && !_dt.value) _dt.value = todayDateStr();
     updateSourceChrome();
     bindEvents();
     updateLangBtn();
