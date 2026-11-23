@@ -3501,7 +3501,7 @@
       const envStats = isPressure ? data.pressureStats : isTemperature ? data.temperatureStats : null;
       const envAvg = envStats && Number.isFinite(Number(envStats.avg))
         ? Number(envStats.avg)
-        : (values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0);
+        : (plotSeries.length ? plotSeries.map((point) => point.v).reduce((sum, value) => sum + value, 0) / plotSeries.length : 0);
 
       if (state.live) {
         $('#chartTitle').textContent = isVolume
