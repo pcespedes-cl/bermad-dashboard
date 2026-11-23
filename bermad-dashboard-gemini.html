@@ -3352,6 +3352,7 @@
 
       let plotSeries = seriesFor(var1Name, data, intervalMin);
       let plotSeries2 = var2Name ? seriesFor(var2Name, data, intervalMin) : [];
+      const hasSecondData = !!var2Name && plotSeries2.length > 0;
 
       if (state.live && plotSeries.length) {
         plotSeries = [plotSeries[plotSeries.length - 1]];
@@ -3364,7 +3365,7 @@
       const H = Math.max(240, wrap.clientHeight || 338);
       svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
 
-      const hasSecond = !!var2Name;
+      const hasSecond = hasSecondData;
       const pad = { l: 58, r: hasSecond ? 58 : 18, t: 18, b: 36 };
       const plotW = W - pad.l - pad.r;
       const plotH = H - pad.t - pad.b;
