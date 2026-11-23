@@ -3412,7 +3412,10 @@
             : isPressure
               ? 'Presión'
               : 'Caudal vs meta operativa';
-        $('#chartSubtitle').textContent = `${rangeLabel(hours)} · resolución ${intervalMin} min · ${
+        const rangeText = (state.rangeFrom && state.rangeTo)
+          ? `${fmtDateOnly(state.rangeFrom)} → ${fmtDateOnly(state.rangeTo)}`
+          : rangeLabel(hours);
+        $('#chartSubtitle').textContent = `${rangeText} · resolución ${intervalMin} min · ${
           isVolume
             ? 'volumen integrado'
             : isTemperature
