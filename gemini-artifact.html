@@ -1367,6 +1367,12 @@
     }
 
     .badge-ok { background: var(--green-soft); color: var(--green); }
+    .badge-live {
+      background: linear-gradient(145deg, #39ff8e, #00ff88);
+      color: #0a3d1a;
+      border: 1px solid #00ff88;
+      box-shadow: 0 0 10px rgba(0, 255, 136, .45);
+    }
     .badge-warn { background: var(--amber-soft); color: var(--amber); }
     .badge-bad { background: var(--red-soft); color: var(--red); }
 
@@ -2944,7 +2950,7 @@
       if (stale !== null && stale !== undefined && stale > 30) {
         return { className: 'is-warn', label: 'Datos retrasados', badge: 'badge-warn' };
       }
-      return { className: 'is-online', label: 'En línea', badge: 'badge-ok' };
+      return { className: 'is-online', label: 'En línea', badge: 'badge-live' };
     }
 
     function render(data) {
@@ -2962,7 +2968,7 @@
       $('#statusText').textContent = state.source === 'sim' ? 'Simulador' : tone.label;
       statusPill.title = `${tone.label} · última lectura ${relative(stats.lastReading)}`;
 
-      setBadge($('#deviceStatus'), device.isOnline ? 'En línea' : 'Fuera de línea', device.isOnline ? 'badge-ok' : 'badge-bad');
+      setBadge($('#deviceStatus'), device.isOnline ? 'En línea' : 'Fuera de línea', device.isOnline ? 'badge-live' : 'badge-bad');
 
       renderKpis(data);
       renderEnvironment(data);
