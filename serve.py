@@ -74,8 +74,22 @@ def _ssl_context() -> ssl.SSLContext:
     return ssl.create_default_context()
 
 
-def api_get(path: str, params: dict | None = None, timeout: int = 120) -> dict:
-    """GET a la API de BERMAD con la API key en la cabecera."""
+RETRY_STATUS = {408, 425, 429, 500, 502, 503, 504}
+RETRY_ATTEMPTS = 3
+RETRY_BASE_DELAY = 1.0
+
+
+def api_get(
+    path: str,
+    params: dict | None = None,
+    timeout: int = 30,
+    attempts: int = RETRY_ATTEMPTS,
+) -> dict:
+    """GET a la API de BERMAD con la API key en la cabecera.
+
+    Reintenta errores transitorios (timeout, red, 5xx, 429) con backoff
+    exponencial. La API key nunca se registra en los mensajes de error.
+    """
     query = urllib.parse.urlencode(params or {}, doseq=True)
     url = f"{API_BASE}{path}"
     if query:
@@ -91,17 +105,36 @@ def api_get(path: str, params: dict | None = None, timeout: int = 120) -> dict:
         method="GET",
     )
 
-    try:
-        with urllib.request.urlopen(request, timeout=timeout, context=_ssl_context()) as response:
-            body = response.read().decode("utf-8", "replace")
-            return json.loads(body) if body else {}
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", "replace")[:600]
-        raise ApiError(f"BERMAD respondió HTTP {exc.code}: {detail}") from exc
-    except urllib.error.URLError as exc:
-        raise ApiError(f"No se pudo conectar con BERMAD: {exc.reason}") from exc
-    except json.JSONDecodeError as exc:
-        raise ApiError("BERMAD devolvió una respuesta que no es JSON.") from exc
+    attempts = max(1, int(attempts))
+    last_error: str = "error desconocido"
+
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout, context=_ssl_context()) as response:
+                body = response.read().decode("utf-8", "replace")
+                return json.loads(body) if body else {}
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", "replace")[:600]
+            last_error = f"BERMAD respondió HTTP {exc.code}: {detail}"
+            if exc.code in RETRY_STATUS and attempt < attempts:
+                time.sleep(RETRY_BASE_DELAY * (2 ** (attempt - 1)))
+                continue
+            raise ApiError(last_error) from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            reason = getattr(exc, "reason", exc)
+            last_error = f"No se pudo conectar con BERMAD: {reason}"
+            if attempt < attempts:
+                time.sleep(RETRY_BASE_DELAY * (2 ** (attempt - 1)))
+                continue
+            raise ApiError(last_error) from exc
+        except json.JSONDecodeError as exc:
+            last_error = "BERMAD devolvió una respuesta que no es JSON."
+            if attempt < attempts:
+                time.sleep(RETRY_BASE_DELAY * (2 ** (attempt - 1)))
+                continue
+            raise ApiError(last_error) from exc
+
+    raise ApiError(last_error)
 
 
 def first_item(payload: dict) -> dict:
@@ -110,21 +143,31 @@ def first_item(payload: dict) -> dict:
 
 
 def fetch_all_pages(path: str, params: dict, max_records: int = MAX_RECORDS) -> tuple[list[dict], int, int]:
-    """Descarga todas las páginas necesarias. Tolerante a fallos parciales."""
+    """Descarga todas las páginas en paralelo. Tolerante a fallos parciales."""
     first = api_get(path, {**params, "offset": 0, "limit": PAGE_SIZE})
     records = list(first.get("data") or [])
     total = int((first.get("meta") or {}).get("total") or len(records))
     wanted = min(total, max_records)
+    offsets = list(range(PAGE_SIZE, wanted, PAGE_SIZE))
     requests_made = 1
 
-    offsets = list(range(PAGE_SIZE, wanted, PAGE_SIZE))
-    for offset in offsets:
-        try:
+    if offsets:
+        def load_page(offset: int) -> tuple[int, list[dict]]:
             page = api_get(path, {**params, "offset": offset, "limit": PAGE_SIZE})
-            records.extend(list(page.get("data") or []))
-        except ApiError:
-            pass
-        requests_made += 1
+            return offset, list(page.get("data") or [])
+
+        pages: dict[int, list[dict]] = {}
+        with ThreadPoolExecutor(max_workers=min(6, len(offsets))) as executor:
+            futures = {executor.submit(load_page, offset): offset for offset in offsets}
+            for future in futures:
+                try:
+                    offset, page_records = future.result()
+                except ApiError:
+                    continue
+                pages[offset] = page_records
+        for offset in offsets:
+            records.extend(pages.get(offset, []))
+        requests_made += len(offsets)
 
     return records, total, requests_made
 
@@ -276,20 +319,80 @@ def build_battery(power_rows: list[dict], tz: ZoneInfo) -> dict:
     }
 
 
+CACHE_LOCK = threading.Lock()
+CACHE_FETCH_LOCKS: dict[str, threading.Lock] = {}
+
+
+def _cached_payload(
+    cache_key: str,
+    allow_stale: bool = False,
+    min_timestamp: float | None = None,
+) -> dict | None:
+    now_monotonic = time.monotonic()
+    with CACHE_LOCK:
+        cached = CACHE.get(cache_key)
+    if not cached:
+        return None
+    if min_timestamp is not None and cached[0] < min_timestamp:
+        return None
+    age = now_monotonic - cached[0]
+    if age >= CACHE_TTL and not allow_stale:
+        return None
+    payload = dict(cached[1])
+    payload["cached"] = True
+    payload["cacheAgeSeconds"] = round(age, 1)
+    if age >= CACHE_TTL:
+        payload["stale"] = True
+    return payload
+
+
+def _cache_fetch_lock(cache_key: str) -> threading.Lock:
+    """Evita que varias peticiones simultáneas disparen la misma consulta lenta."""
+    with CACHE_LOCK:
+        return CACHE_FETCH_LOCKS.setdefault(cache_key, threading.Lock())
+
+
 def build_dashboard(hours: int = 24, force: bool = False) -> dict:
     hours = max(1, min(48, int(hours)))
     cache_key = f"{PROJECT_ID}:{UNIT_ID}:{hours}"
-    now_monotonic = time.monotonic()
+    request_started = time.monotonic()
+
+    fetch_lock = _cache_fetch_lock(cache_key)
 
     if not force:
-        with CACHE_LOCK:
-            cached = CACHE.get(cache_key)
-        if cached and now_monotonic - cached[0] < CACHE_TTL:
-            payload = dict(cached[1])
-            payload["cached"] = True
-            payload["cacheAgeSeconds"] = round(now_monotonic - cached[0], 1)
-            return payload
+        cached = _cached_payload(cache_key)
+        if cached:
+            return cached
+        if fetch_lock.locked():
+            # Ya hay una consulta en curso: no bloqueamos el panel, servimos
+            # la última copia buena aunque esté vencida.
+            stale = _cached_payload(cache_key, allow_stale=True)
+            if stale:
+                return stale
 
+    with fetch_lock:
+        if not force:
+            cached = _cached_payload(cache_key)
+            if cached:
+                return cached
+        else:
+            # Otra petición forzada pudo terminar mientras esperábamos el turno:
+            # reutilizamos su resultado en vez de repetir la consulta.
+            cached = _cached_payload(cache_key, min_timestamp=request_started)
+            if cached:
+                return cached
+        try:
+            return _build_dashboard(cache_key, hours)
+        except ApiError:
+            # Si BERMAD no responde, se entrega la última copia buena en vez
+            # de romper el panel.
+            stale = _cached_payload(cache_key, allow_stale=True)
+            if stale:
+                return stale
+            raise
+
+
+def _build_dashboard(cache_key: str, hours: int) -> dict:
     started_at = time.monotonic()
 
     try:
@@ -342,19 +445,22 @@ def build_dashboard(hours: int = 24, force: bool = False) -> dict:
             600,
         )
 
+        meters: list[dict] = []
+        meter: dict = {}
+        flow_error: str | None = None
         try:
             meter_payload = meter_future.result()
             meters = meter_payload.get("data") or []
             meter = next((item for item in meters if item.get("unitId") == UNIT_ID), meters[0] if meters else {})
         except ApiError:
             meter = {}
-
         alerts = []
 
         try:
             flow_rows, flow_total, flow_pages = flow_future.result()
-        except ApiError:
+        except ApiError as exc:
             flow_rows, flow_total, flow_pages = [], 0, 0
+            flow_error = str(exc)
 
         try:
             alerts_payload = alerts_future.result()
@@ -366,6 +472,11 @@ def build_dashboard(hours: int = 24, force: bool = False) -> dict:
             power_rows, _, _ = power_future.result()
         except ApiError:
             power_rows = []
+
+    if flow_error and not flow_rows:
+        # Sin lecturas de caudal el panel no tiene sentido: mejor informar el
+        # fallo para que el frontend reintente o use la última copia en caché.
+        raise ApiError(flow_error)
 
     # Agrupa por timestamp: si hay varios medidores reportando a la misma hora,
     # el caudal mostrado es la suma del proyecto.
@@ -520,6 +631,7 @@ def build_dashboard(hours: int = 24, force: bool = False) -> dict:
             "flowTotal": flow_total,
             "flowTruncated": flow_total > len(flow_rows),
             "requests": flow_pages + 5,
+            "errors": [flow_error] if flow_error else [],
         },
     }
 
@@ -529,6 +641,9 @@ def build_dashboard(hours: int = 24, force: bool = False) -> dict:
 
 
 class Handler(SimpleHTTPRequestHandler):
+    BLOCKED_SUFFIXES = (".log", ".pyc", ".sqlite", ".sqlite3", ".db", ".pem", ".key")
+    BLOCKED_NAMES = {"nohup.out"}
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(BASE_DIR), **kwargs)
 
@@ -537,7 +652,7 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("Referrer-Policy", "same-origin")
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("X-Frame-Options", "ALLOWALL")
+        self.send_header("Content-Security-Policy", "frame-ancestors *")
         super().end_headers()
 
     def send_json(self, status: int, payload: dict) -> None:
@@ -551,20 +666,62 @@ class Handler(SimpleHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError):
             pass
 
+    def is_blocked_path(self, path: str) -> bool:
+        """Impide servir archivos sensibles (.env, .git, logs, claves)."""
+        rel = urllib.parse.unquote(path).lstrip("/")
+        parts = [part for part in rel.split("/") if part]
+        if not parts:
+            return False
+        if any(part.startswith(".") for part in parts):
+            return True
+        name = parts[-1].lower()
+        if name in self.BLOCKED_NAMES:
+            return True
+        return name.endswith(self.BLOCKED_SUFFIXES)
+
+    def do_OPTIONS(self) -> None:  # noqa: N802
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type, Accept")
+        self.send_header("Access-Control-Max-Age", "600")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def do_GET(self) -> None:  # noqa: N802
         parsed = urllib.parse.urlparse(self.path)
 
         if parsed.path == "/api/health":
-            self.send_json(
-                200,
-                {
-                    "ok": True,
-                    "projectId": PROJECT_ID,
-                    "unitId": UNIT_ID,
-                    "apiBase": API_BASE,
-                    "serverTime": datetime.now(timezone.utc).isoformat(),
-                },
-            )
+            query = urllib.parse.parse_qs(parsed.query)
+            deep = (query.get("deep") or ["0"])[0] in {"1", "true", "yes"}
+            payload = {
+                "ok": True,
+                "projectId": PROJECT_ID,
+                "unitId": UNIT_ID,
+                "apiBase": API_BASE,
+                "cached": len(CACHE),
+                "serverTime": datetime.now(timezone.utc).isoformat(),
+            }
+            if deep:
+                started = time.monotonic()
+                try:
+                    api_get(
+                        f"/project/{PROJECT_ID}/omega",
+                        {"offset": 0, "limit": 1, "id": UNIT_ID},
+                        timeout=20,
+                        attempts=1,
+                    )
+                    payload["api"] = {
+                        "ok": True,
+                        "latencyMs": round((time.monotonic() - started) * 1000),
+                    }
+                except ApiError as exc:
+                    payload["ok"] = False
+                    payload["api"] = {"ok": False, "error": str(exc)}
+            self.send_json(200 if payload["ok"] else 503, payload)
+            return
+
+        if self.is_blocked_path(parsed.path):
+            self.send_json(404, {"ok": False, "error": "Recurso no disponible."})
             return
 
         if parsed.path == "/api/dashboard":
@@ -655,16 +812,6 @@ class Handler(SimpleHTTPRequestHandler):
                 self.wfile.write(data)
             except (BrokenPipeError, ConnectionResetError):
                 pass
-            return
-            api_path = parsed.path[len("/api") :]
-            params = urllib.parse.parse_qs(parsed.query, keep_blank_values=True)
-            flat_params = {key: values[-1] for key, values in params.items()}
-            try:
-                payload = api_get(api_path, flat_params)
-            except ApiError as exc:
-                self.send_json(502, {"ok": False, "error": str(exc)})
-            else:
-                self.send_json(200, {"ok": True, "data": payload})
             return
 
         super().do_GET()

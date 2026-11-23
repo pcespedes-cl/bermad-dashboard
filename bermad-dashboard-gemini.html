@@ -2805,6 +2805,9 @@
       const online = Boolean(data.device?.isOnline);
       const stale = data.stats?.staleMinutes;
       if (!online) return { className: 'is-offline', label: 'Fuera de línea', badge: 'badge-bad' };
+      if (data.stale) {
+        return { className: 'is-warn', label: 'Sin conexión · copia guardada', badge: 'badge-warn' };
+      }
       if (stale !== null && stale !== undefined && stale > 30) {
         return { className: 'is-warn', label: 'Datos retrasados', badge: 'badge-warn' };
       }
@@ -3499,7 +3502,9 @@
       $('#footerWindow').textContent = `Ventana: ${fmtDateTime(window.fromUTC)} → ${fmtDateTime(window.toUTC)} · ${window.timezone || DEFAULT_TZ}`;
       const generated = state.source === 'sim'
         ? 'simulación local'
-        : data.cached ? 'datos en caché' : 'datos en vivo';
+        : data.stale
+          ? 'copia de respaldo sin conexión'
+          : data.cached ? 'datos en caché' : 'datos en vivo';
       $('#footerMeta').textContent = `Actualizado ${relative(data.generatedAt)} (${generated}) · ${api.latencyMs || 0} ms · ${stats.points || 0} lecturas · actualización automática cada 60 s.`;
     }
 

@@ -158,9 +158,22 @@ Endpoints propios del backend:
 
 | Endpoint | Uso |
 | --- | --- |
-| `GET /api/dashboard?hours=24` | Datos consolidados del dashboard |
+| `GET /api/dashboard?hours=24` | Datos consolidados del dashboard (`force=1` ignora la caché) |
 | `GET /api/export?hours=24` | CSV de lecturas (descarga) |
-| `GET /api/health` | Estado del proxy y de la configuración |
+| `GET /api/health` | Estado del proxy. Con `?deep=1` verifica también la conexión real con BERMAD |
+
+El servidor aplica estas garantías de conexión:
+
+- **Reintentos:** hasta 3 intentos con backoff exponencial ante timeout, error de
+  red, `429` o `5xx`.
+- **Caché:** 20 s por ventana. Varias peticiones simultáneas comparten una sola
+  consulta (sin “estampida” de peticiones).
+- **Última copia buena:** si BERMAD falla, se devuelve el último resultado en
+  caché marcado con `"stale": true` en lugar de un error 502.
+- **Paginación en paralelo:** las páginas de 200 registros se descargan a la vez
+  (de ~25 s a ~5 s para 24 h).
+- **Archivos sensibles protegidos:** `.env`, `.git`, `*.log` y claves devuelven
+  404, aunque el servidor también sirve archivos estáticos.
 
 Conexión base (código real de `serve.py`):
 
@@ -179,8 +192,11 @@ API_KEY = os.environ.get("BERMAD_API_KEY", "<tu-api-key>")
 PROJECT_ID = os.environ.get("BERMAD_PROJECT_ID", "f09f3f01c034ad82ac311fdb3e47e391")
 UNIT_ID = os.environ.get("BERMAD_UNIT_ID", "dcc38574-e6b8-454e-b3f3-36b1c3924264")
 
-def api_get(path, params=None, timeout=40):
-    """GET a la API de BERMAD con la API key en la cabecera."""
+def api_get(path, params=None, timeout=45, attempts=3):
+    """GET a la API de BERMAD con la API key en la cabecera.
+
+    Reintenta hasta `attempts` veces los errores transitorios.
+    """
     url = f"{API_BASE}{path}"
     query = urllib.parse.urlencode(params or {}, doseq=True)
     if query:
@@ -197,9 +213,18 @@ def api_get(path, params=None, timeout=40):
     )
 
     context = ssl.create_default_context(cafile=certifi.where())
-    with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
-        body = response.read().decode("utf-8", "replace")
-        return json.loads(body) if body else {}
+    last_error = "error desconocido"
+    for attempt in range(1, attempts + 1):
+        try:
+            with urllib.request.urlopen(request, timeout=timeout, context=context) as response:
+                body = response.read().decode("utf-8", "replace")
+                return json.loads(body) if body else {}
+        except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError, OSError) as exc:
+            last_error = str(exc)
+            if attempt < attempts:
+                time.sleep(1.0 * (2 ** (attempt - 1)))
+                continue
+            raise ApiError(last_error) from exc
 ```
 
 ### Endpoints utilizados
@@ -224,8 +249,9 @@ def api_get(path, params=None, timeout=40):
 - Las alertas requieren `from`/`to` en formato **`DD/MM/YYYY`**.
 - El volumen es una **integración del caudal** (`caudal × intervalo`), porque el
   totalizador del medidor no viene en la respuesta.
-- El proxy envía `Access-Control-Allow-Origin: *` y `X-Frame-Options: ALLOWALL`
-  para permitir el uso desde Gemini Canvas o Google Sites.
+- El proxy envía `Access-Control-Allow-Origin: *` y
+  `Content-Security-Policy: frame-ancestors *` para permitir el uso desde
+  Gemini Canvas o Google Sites.
 
 ## Usar el archivo de un solo archivo (Gemini Canvas)
 
