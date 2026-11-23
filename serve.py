@@ -565,7 +565,7 @@ def _build_dashboard(cache_key: str, hours: int, start: str = None, end: str = N
     current = values[-1] if values else 0.0
     previous = values[-2] if len(values) > 1 else None
     volume = sum(values) * (interval_minutes / 60.0)
-    expected = max(1, round(hours * 60 / interval_minutes))
+    expected = max(1, round((hours or 24) * 60 / interval_minutes))
     last_reading = series[-1]["t"] if series else None
     last_dt = parse_iso(last_reading)
     stale_minutes = None
