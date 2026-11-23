@@ -352,9 +352,24 @@ def _cache_fetch_lock(cache_key: str) -> threading.Lock:
         return CACHE_FETCH_LOCKS.setdefault(cache_key, threading.Lock())
 
 
-def build_dashboard(hours: int = 24, force: bool = False) -> dict:
-    hours = max(1, min(48, int(hours)))
-    cache_key = f"{PROJECT_ID}:{UNIT_ID}:{hours}"
+def build_dashboard(hours: int = 24, force: bool = False, start: str = None, end: str = None) -> dict:
+    if start and end:
+        try:
+            _s = datetime.fromisoformat(start.replace("Z", "+00:00"))
+            _e = datetime.fromisoformat(end.replace("Z", "+00:00"))
+            if _s.tzinfo is None:
+                _s = _s.replace(tzinfo=timezone.utc)
+            if _e.tzinfo is None:
+                _e = _e.replace(tzinfo=timezone.utc)
+            cache_key = f"{PROJECT_ID}:{UNIT_ID}:range:{_s.isoformat()}:{_e.isoformat()}"
+            hours = None
+        except ValueError:
+            start = end = None
+            hours = max(1, min(48, int(hours)))
+            cache_key = f"{PROJECT_ID}:{UNIT_ID}:{hours}"
+    else:
+        hours = max(1, min(48, int(hours)))
+        cache_key = f"{PROJECT_ID}:{UNIT_ID}:{hours}"
     request_started = time.monotonic()
 
     fetch_lock = _cache_fetch_lock(cache_key)
@@ -382,7 +397,7 @@ def build_dashboard(hours: int = 24, force: bool = False) -> dict:
             if cached:
                 return cached
         try:
-            return _build_dashboard(cache_key, hours)
+            return _build_dashboard(cache_key, hours, start, end)
         except ApiError:
             # Si BERMAD no responde, se entrega la última copia buena en vez
             # de romper el panel.
@@ -392,7 +407,7 @@ def build_dashboard(hours: int = 24, force: bool = False) -> dict:
             raise
 
 
-def _build_dashboard(cache_key: str, hours: int) -> dict:
+def _build_dashboard(cache_key: str, hours: int, start: str = None, end: str = None) -> dict:
     started_at = time.monotonic()
 
     try:
@@ -406,8 +421,26 @@ def _build_dashboard(cache_key: str, hours: int) -> dict:
         # no debe tumbar el panel; se usa una zona horaria por defecto.
         omega = {}
     tz = resolve_timezone(omega.get("timezone"))
-    end_local = datetime.now(tz).replace(microsecond=0)
-    start_local = end_local - timedelta(hours=hours)
+    if start and end:
+        try:
+            _s = datetime.fromisoformat(start.replace("Z", "+00:00"))
+            _e = datetime.fromisoformat(end.replace("Z", "+00:00"))
+            if _s.tzinfo is None:
+                _s = _s.replace(tzinfo=tz)
+            else:
+                _s = _s.astimezone(tz)
+            if _e.tzinfo is None:
+                _e = _e.replace(tzinfo=tz)
+            else:
+                _e = _e.astimezone(tz)
+            start_local = _s.replace(microsecond=0, tzinfo=None).replace(tzinfo=tz)
+            end_local = _e.replace(microsecond=0, tzinfo=None).replace(tzinfo=tz)
+        except ValueError:
+            end_local = datetime.now(tz).replace(microsecond=0)
+            start_local = end_local - timedelta(hours=hours or 24)
+    else:
+        end_local = datetime.now(tz).replace(microsecond=0)
+        start_local = end_local - timedelta(hours=hours or 24)
     from_value = fmt_api_dt(start_local)
     to_value = fmt_api_dt(end_local)
     alert_from = start_local.strftime("%d/%m/%Y")
@@ -588,7 +621,7 @@ def _build_dashboard(cache_key: str, hours: int) -> dict:
             "description": project.get("description"),
         },
         "window": {
-            "hours": hours,
+            "hours": int((end_local - start_local).total_seconds() / 3600) if (end_local - start_local).total_seconds() > 0 else (hours or 24),
             "timezone": device["timezone"],
             "fromLocal": start_local.isoformat(),
             "toLocal": end_local.isoformat(),
@@ -731,8 +764,10 @@ class Handler(SimpleHTTPRequestHandler):
             except ValueError:
                 hours = 24
             force = (query.get("force") or ["0"])[0] in {"1", "true", "yes"}
+            start = (query.get("from") or [None])[0]
+            end = (query.get("to") or [None])[0]
             try:
-                payload = build_dashboard(hours=hours, force=force)
+                payload = build_dashboard(hours=hours, force=force, start=start, end=end)
             except ApiError as exc:
                 self.send_json(502, {"ok": False, "error": str(exc)})
             except Exception as exc:  # pragma: no cover - salvaguarda
@@ -747,8 +782,10 @@ class Handler(SimpleHTTPRequestHandler):
                 hours = int((query.get("hours") or ["24"])[0])
             except ValueError:
                 hours = 24
+            start = (query.get("from") or [None])[0]
+            end = (query.get("to") or [None])[0]
             try:
-                payload = build_dashboard(hours=hours, force=False)
+                payload = build_dashboard(hours=hours, force=False, start=start, end=end)
             except Exception as exc:
                 self.send_json(502, {"ok": False, "error": str(exc)})
                 return

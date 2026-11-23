@@ -1764,6 +1764,37 @@
       color: #0a3d1a;
       box-shadow: 0 0 12px rgba(0, 255, 136, .55);
     }
+    .date-range {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--panel-soft);
+    }
+    .date-range label {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      font-size: 9.5px;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    .date-range input[type="date"] {
+      border: 1px solid var(--line-strong);
+      border-radius: 7px;
+      padding: 4px 6px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .date-range .ghost-btn { padding: 6px 10px; font-size: 10px; }
     .card .chip-flow { background: rgba(255, 255, 255, .18); color: #ffffff; }
     .card .chip-zero { background: rgba(255, 255, 255, .12); color: #ffffff; }
     .card .op-input { background: rgba(255, 255, 255, .92); border-color: rgba(255, 255, 255, .4); }
@@ -2135,6 +2166,13 @@
             </div>
           </div>
 
+          <div class="date-range" id="dateRange">
+            <label>Inicio de análisis <input type="date" id="dateFrom"></label>
+            <label>Término de análisis <input type="date" id="dateTo"></label>
+            <button type="button" class="ghost-btn" id="applyRangeBtn">Aplicar</button>
+            <button type="button" class="ghost-btn" id="clearRangeBtn">Limpiar</button>
+          </div>
+
           <div class="chart-wrap" id="chartWrap">
             <svg id="chart" preserveAspectRatio="none" role="img" aria-label="Gráfico de caudal en el tiempo">
               <defs>
@@ -2349,6 +2387,8 @@
     const PLAN_DEFAULTS = { tons: 145000, days: 75, ratio: 0.8, area: 25000, rate: 2.7, start: '' };
     const state = {
       hours: 24,
+      rangeFrom: null,
+      rangeTo: null,
       view: 'flow',
       source: 'api',
       apiBase: '',
@@ -2918,7 +2958,10 @@
           return;
         }
 
-        const url = apiUrl(`/api/dashboard?hours=${loadHours}${force ? '&force=1' : ''}`);
+        let url = apiUrl(`/api/dashboard?hours=${loadHours}${force ? '&force=1' : ''}`);
+        if (state.rangeFrom && state.rangeTo) {
+          url = apiUrl(`/api/dashboard?from=${encodeURIComponent(state.rangeFrom)}&to=${encodeURIComponent(state.rangeTo)}${force ? '&force=1' : ''}`);
+        }
         const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok || !payload.ok) {
@@ -3866,6 +3909,10 @@
       'Error de red': 'Network error',
       'error de red': 'network error',
       'tiempo de espera agotado (90 s)': 'timeout (90 s)',
+      'Inicio de análisis': 'Analysis start',
+      'Término de análisis': 'Analysis end',
+      'Aplicar': 'Apply',
+      'Limpiar': 'Clear',
       'Cambiar tema': 'Toggle theme',
       'Configurar backend API': 'Configure API backend',
       'Fuente de datos': 'Data source',
@@ -4067,6 +4114,11 @@
       $$('.range-control button[data-hours]').forEach((button) => {
         button.addEventListener('click', () => {
           state.live = false;
+          state.rangeFrom = null;
+          state.rangeTo = null;
+          const df = $('#dateFrom'); const dt = $('#dateTo');
+          if (df) df.value = '';
+          if (dt) dt.value = '';
           const liveBtn = document.querySelector('.live-btn');
           if (liveBtn) liveBtn.classList.remove('active');
           $$('.range-control button').forEach((item) => item.classList.remove('active'));
@@ -4075,6 +4127,37 @@
           loadDashboard(true);
         });
       });
+
+      const applyRangeBtn = $('#applyRangeBtn');
+      if (applyRangeBtn) {
+        applyRangeBtn.addEventListener('click', () => {
+          const from = $('#dateFrom')?.value;
+          const to = $('#dateTo')?.value;
+          if (!from || !to) { showError('Selecciona fecha de inicio y término.'); return; }
+          state.rangeFrom = `${from}T00:00:00`;
+          state.rangeTo = `${to}T23:59:59`;
+          state.live = false;
+          const liveBtn = document.querySelector('.live-btn');
+          if (liveBtn) liveBtn.classList.remove('active');
+          $$('.range-control button').forEach((item) => item.classList.remove('active'));
+          loadDashboard(true);
+        });
+      }
+      const clearRangeBtn = $('#clearRangeBtn');
+      if (clearRangeBtn) {
+        clearRangeBtn.addEventListener('click', () => {
+          state.rangeFrom = null;
+          state.rangeTo = null;
+          const df = $('#dateFrom'); const dt = $('#dateTo');
+          if (df) df.value = '';
+          if (dt) dt.value = '';
+          state.hours = 24;
+          const defaultBtn = document.querySelector('.range-control button[data-hours="24"]');
+          $$('.range-control button').forEach((item) => item.classList.remove('active'));
+          if (defaultBtn) defaultBtn.classList.add('active');
+          loadDashboard(true);
+        });
+      }
 
       const liveBtn = document.querySelector('.live-btn');
       if (liveBtn) {
