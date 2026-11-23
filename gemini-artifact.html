@@ -621,18 +621,21 @@
 
     .kpi-label {
       color: var(--muted);
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 800;
       letter-spacing: .1em;
       text-transform: uppercase;
     }
+
+    /* Reserva espacio para el anillo de cumplimiento (posicionado absoluto). */
+    .kpi:has(.coverage-ring) .kpi-label { padding-right: 46px; }
 
     .kpi-value {
       display: flex;
       align-items: baseline;
       gap: 6px;
       margin-top: 7px;
-      font-size: 32px;
+      font-size: 38px;
       line-height: 1;
       font-weight: 800;
       letter-spacing: -.045em;
@@ -641,7 +644,7 @@
 
     .kpi-value .unit {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 600;
       letter-spacing: 0;
     }
@@ -653,7 +656,7 @@
       gap: 7px;
       margin-top: 9px;
       color: var(--muted);
-      font-size: 10.5px;
+      font-size: 12.5px;
       line-height: 1.3;
     }
 
@@ -671,7 +674,7 @@
       justify-content: space-between;
       gap: 8px;
       color: var(--muted);
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 800;
       letter-spacing: .05em;
       text-transform: uppercase;
@@ -679,7 +682,7 @@
 
     .battery-estimate-head strong {
       color: var(--text);
-      font-size: 11.5px;
+      font-size: 13.5px;
       font-weight: 800;
       letter-spacing: -.01em;
       white-space: nowrap;
@@ -715,7 +718,7 @@
       gap: 6px;
       margin-top: 4px;
       color: var(--muted);
-      font-size: 10.5px;
+      font-size: 12.5px;
       white-space: nowrap;
     }
 
@@ -764,8 +767,8 @@
 
     .flow-block { min-width: 0; }
 
-    .kpi-flow .flow-value { font-size: 32px; }
-    .kpi-flow .flow-foot { margin-top: 6px; font-size: 10.5px; }
+    .kpi-flow .flow-value { font-size: 38px; }
+    .kpi-flow .flow-foot { margin-top: 6px; font-size: 12.5px; }
 
     .flow-target-block {
       display: flex;
@@ -780,7 +783,7 @@
       align-items: center;
       min-height: 30px;
       color: #ffffff;
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 800;
       letter-spacing: .08em;
       text-transform: uppercase;
@@ -792,7 +795,7 @@
       gap: 5px;
       margin-top: 7px;
       color: #fff;
-      font-size: 32px;
+      font-size: 38px;
       font-weight: 800;
       line-height: 1;
       letter-spacing: -.045em;
@@ -801,7 +804,7 @@
 
     .flow-target-value .unit {
       color: #ffffff;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 600;
       letter-spacing: 0;
     }
@@ -809,7 +812,7 @@
     .flow-target-sub {
       margin-top: 5px;
       color: #ffffff;
-      font-size: 10.5px;
+      font-size: 12.5px;
       line-height: 1.3;
     }
 
@@ -821,7 +824,7 @@
       margin-top: auto;
       padding-top: 8px;
       color: #ffffff;
-      font-size: 10.5px;
+      font-size: 12.5px;
       font-weight: 600;
     }
 
@@ -869,7 +872,7 @@
 
     .ratio-col-label {
       color: var(--muted);
-      font-size: 10px;
+      font-size: 12px;
       font-weight: 800;
       letter-spacing: .06em;
       text-transform: uppercase;
@@ -881,7 +884,7 @@
       align-items: baseline;
       gap: 4px;
       margin-top: 4px;
-      font-size: 28px;
+      font-size: 33px;
       font-weight: 800;
       line-height: 1;
       letter-spacing: -.045em;
@@ -890,7 +893,7 @@
 
     .ratio-col-value .unit {
       color: var(--muted);
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 600;
       letter-spacing: 0;
     }
@@ -899,7 +902,7 @@
       display: block;
       margin-top: 4px;
       color: var(--muted);
-      font-size: 10.5px;
+      font-size: 12.5px;
     }
 
     .ratio-col-target .ratio-col-value { color: var(--brand); }
@@ -1250,13 +1253,13 @@
       justify-content: space-between;
       gap: 8px;
       color: var(--muted);
-      font-size: 9px;
+      font-size: 11px;
       font-weight: 700;
       letter-spacing: .035em;
       text-transform: uppercase;
     }
 
-    .plan-progress-head strong { color: var(--text); font-size: 11px; font-weight: 800; letter-spacing: -.01em; }
+    .plan-progress-head strong { color: var(--text); font-size: 13px; font-weight: 800; letter-spacing: -.01em; }
 
     .progress-track {
       height: 7px;
@@ -1290,8 +1293,8 @@
     }
 
     .plan-list > div:last-child { padding-bottom: 0; border-bottom: 0; }
-    .plan-list span { color: var(--muted); font-size: 9.5px; }
-    .plan-list strong { font-size: 10px; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    .plan-list span { color: var(--muted); font-size: 11.5px; }
+    .plan-list strong { font-size: 12px; font-weight: 800; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 
     .plan-note {
       margin-top: 10px;
@@ -1299,7 +1302,7 @@
       border-radius: 8px;
       background: linear-gradient(145deg, var(--blue-wash) 0%, var(--blue-wash-mid) 100%);
       color: var(--muted);
-      font-size: 9px;
+      font-size: 11px;
       line-height: 1.45;
     }
 
@@ -1643,7 +1646,7 @@
       .kpi-ratio { grid-column: span 1; }
       .flow-grid { grid-template-columns: 1fr; gap: 12px; }
       .flow-target-block { padding: 10px 0 0; border-top: 1px solid rgba(255, 255, 255, .18); border-left: 0; }
-      .kpi-flow .flow-value { font-size: 32px; }
+      .kpi-flow .flow-value { font-size: 38px; }
       .kpi { min-height: 124px; }
       .kpi-value { font-size: 30px; }
       .brand-title { font-size: 17px; }
