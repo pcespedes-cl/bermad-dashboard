@@ -236,6 +236,38 @@
       transition: .18s ease;
     }
 
+    .refresh-wrap { position: relative; display: inline-flex; align-items: center; }
+
+    .lang-btn {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 6px;
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 9px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: .18s ease;
+      z-index: 5;
+    }
+
+    .lang-btn:hover { background: var(--blue-hover); }
+    .lang-btn .flag { font-size: 15px; line-height: 1; }
+
+    /* Modo oscuro: asegurar contraste del botón de idioma */
+    [data-theme="dark"] .lang-btn { background: rgba(255, 255, 255, .10); }
+
     .refresh-btn:hover { transform: translateY(-1px); filter: brightness(1.04); }
     .refresh-btn svg { width: 15px; height: 15px; }
     .refresh-btn.is-loading svg { animation: spin .9s linear infinite; }
@@ -1791,13 +1823,19 @@
             <path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"></path>
           </svg>
         </button>
-        <button class="refresh-btn" id="refreshBtn" type="button">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
-            <path d="M21 3v6h-6"></path>
-          </svg>
-          <span>Actualizar</span>
-        </button>
+        <div class="refresh-wrap">
+          <button class="refresh-btn" id="refreshBtn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+              <path d="M21 3v6h-6"></path>
+            </svg>
+            <span id="refreshLabel">Actualizar</span>
+          </button>
+          <button class="lang-btn" id="langBtn" type="button" title="Switch to English" aria-label="Switch to English">
+            <span class="flag" id="langFlag" aria-hidden="true">🇬🇧</span>
+            <span id="langLabel">English</span>
+          </button>
+        </div>
         <button class="icon-btn" id="apiConfigBtn" type="button" aria-label="Configurar backend API" title="Configurar backend API">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 7h9M19 7h1M4 17h3M13 17h7"></path>
@@ -2245,6 +2283,9 @@
   </div>
 
   <script>
+    let LANG = 'es';
+    try { LANG = localStorage.getItem('bermad-lang') === 'en' ? 'en' : 'es'; } catch (e) {}
+    function locale() { return LANG === 'en' ? 'en-US' : 'es-CL'; }
     const $ = (selector) => document.querySelector(selector);
     const $$ = (selector) => Array.from(document.querySelectorAll(selector));
 
@@ -2284,13 +2325,13 @@
     };
     let plan = { ...PLAN_DEFAULTS };
 
-    const numberFmt = new Intl.NumberFormat('es-CL', {
+    const numberFmt = new Intl.NumberFormat(locale(), {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
 
     function num(value, digits = 1) {
-      const formatter = new Intl.NumberFormat('es-CL', {
+      const formatter = new Intl.NumberFormat(locale(), {
         minimumFractionDigits: digits,
         maximumFractionDigits: digits,
       });
@@ -2340,7 +2381,7 @@
     function fmtDateOnly(value) {
       const ms = dateOnlyMs(value);
       if (ms === null) return '—';
-      return new Intl.DateTimeFormat('es-CL', {
+      return new Intl.DateTimeFormat(locale(), {
         day: '2-digit',
         month: 'short',
         year: 'numeric',
@@ -2350,9 +2391,9 @@
 
     function dateFormatter(options) {
       try {
-        return new Intl.DateTimeFormat('es-CL', { timeZone: timezone(), ...options });
+        return new Intl.DateTimeFormat(locale(), { timeZone: timezone(), ...options });
       } catch {
-        return new Intl.DateTimeFormat('es-CL', options);
+        return new Intl.DateTimeFormat(locale(), options);
       }
     }
 
@@ -2381,20 +2422,22 @@
     }
 
     function relative(iso) {
-      if (!iso) return 'sin lectura';
+      const en = LANG === 'en';
+      if (!iso) return en ? 'no reading' : 'sin lectura';
       const minutes = Math.round((Date.now() - new Date(iso).getTime()) / 60000);
-      if (!Number.isFinite(minutes) || minutes < 0) return 'ahora';
-      if (minutes < 1) return 'hace instantes';
-      if (minutes < 60) return `hace ${minutes} min`;
+      if (!Number.isFinite(minutes) || minutes < 0) return en ? 'now' : 'ahora';
+      if (minutes < 1) return en ? 'just now' : 'hace instantes';
+      if (minutes < 60) return en ? `${minutes} min ago` : `hace ${minutes} min`;
       const hours = Math.floor(minutes / 60);
       const rest = minutes % 60;
-      if (hours < 24) return rest ? `hace ${hours} h ${rest} min` : `hace ${hours} h`;
+      if (hours < 24) return rest ? (en ? `${hours} h ${rest} min ago` : `hace ${hours} h ${rest} min`) : (en ? `${hours} h ago` : `hace ${hours} h`);
       const days = Math.floor(hours / 24);
-      return `hace ${days} d`;
+      return en ? `${days} d ago` : `hace ${days} d`;
     }
 
     function rangeLabel(hours) {
-      return hours === 24 ? 'Últimas 24 horas' : `Últimas ${hours} horas`;
+      const en = LANG === 'en';
+      return hours === 24 ? (en ? 'Last 24 hours' : 'Últimas 24 horas') : (en ? `Last ${hours} hours` : `Últimas ${hours} horas`);
     }
 
     function setTheme(theme) {
@@ -2531,6 +2574,7 @@
     function showError(message) {
       $('#errorText').textContent = message;
       $('#errorBanner').classList.remove('hidden');
+      applyLang();
     }
 
     function hideError() {
@@ -2908,6 +2952,7 @@
       renderAlerts(data);
       renderTable(data);
       renderFooter(data);
+      applyLang();
     }
 
     function renderKpis(data) {
@@ -3592,7 +3637,7 @@
     function setExportBusy(busy) {
       const button = $('#exportBtn');
       button.disabled = busy;
-      $('#exportLabel').textContent = busy ? 'Exportando…' : 'Exportar CSV';
+      $('#exportLabel').textContent = busy ? tr('Exportando…') : tr('Exportar CSV');
     }
 
     async function exportCsv() {
@@ -3603,13 +3648,13 @@
       const stamp = new Date().toISOString().slice(0, 19).replaceAll(':', '-');
 
       if (state.source === 'sim') {
-        const rows = [['Fecha (UTC)', 'Caudal (m3/h)', 'Estado', 'Medidor']];
+        const rows = [[tr('Fecha (UTC)'), tr('Caudal (m3/h)'), tr('Estado'), tr('Medidor')]];
         (data.recentRaw || []).forEach((row) => {
           rows.push([
             new Date(row.t).toISOString(),
             Number(row.v).toFixed(2),
-            Number(row.v) > 0 ? 'Flujo' : 'Sin flujo',
-            row.entity || 'Medidor',
+            Number(row.v) > 0 ? tr('Flujo') : tr('Sin flujo'),
+            row.entity || tr('Medidor'),
           ]);
         });
         const csv = '\uFEFF' + rows
@@ -3631,6 +3676,295 @@
       } finally {
         setExportBusy(false);
       }
+    }
+
+    /* ---------- Internacionalización (ES / EN) ---------- */
+    const I18N_EXACT = {
+      'Monitor de flujo': 'Flow monitor',
+      'Conectando…': 'Connecting…',
+      'Actualizar': 'Refresh',
+      'Actualizando…': 'Refreshing…',
+      'Exportando…': 'Exporting…',
+      'Exportar CSV': 'Export CSV',
+      'Reintentar': 'Retry',
+      'Guardar': 'Save',
+      'Cancelar': 'Cancel',
+      'Backend de la API': 'API backend',
+      'Vacío = mismo origen (': 'Empty = same origin (',
+      'La API key permanece en el servidor.': 'The API key stays on the server.',
+      'La URL debe comenzar con http:// o https://': 'The URL must start with http:// or https://',
+      'Control operacional · lixiviación': 'Operational control · leaching',
+      'Medidor': 'Meter',
+      'En vivo': 'Live',
+      'Parámetros de lixiviación': 'Leaching parameters',
+      'Ajusta el plan y el diseño de riego en tiempo real.': 'Adjust the plan and irrigation design in real time.',
+      'Toneladas': 'Tons',
+      'Duración del ciclo': 'Cycle duration',
+      'días': 'days',
+      'Fecha de inicio': 'Start date',
+      'Razón objetivo': 'Target ratio',
+      'Área de riego': 'Irrigation area',
+      'Tasa de riego': 'Irrigation rate',
+      'Meta de caudal': 'Flow target',
+      'No se pudo cargar la telemetría.': 'Could not load telemetry.',
+      'Gestión de flujos': 'Flow management',
+      'EN VIVO': 'LIVE',
+      'SIMULADO': 'SIMULATED',
+      'Simulador': 'Simulator',
+      'Sin lectura': 'No reading',
+      'Flujo recomendado': 'Recommended flow',
+      'para la razón esperada': 'for the expected ratio',
+      'Razón de lixiviación': 'Leaching ratio',
+      'RL real ·': 'Actual LR ·',
+      'RL ejecutada': 'Executed LR',
+      '— de la RL ejecutada': '— of executed LR',
+      'Volumen del periodo': 'Period volume',
+      'Integración del caudal': 'Flow integration',
+      'Presión': 'Pressure',
+      'Temperatura': 'Temperature',
+      'Próximamente': 'Coming soon',
+      'Cumplimiento del plan': 'Plan compliance',
+      'vs meta diaria': 'vs daily target',
+      'Voltaje del equipo': 'Device voltage',
+      'Batería Omega': 'Omega battery',
+      'Duración estimada': 'Estimated duration',
+      'Caudal vs meta operativa': 'Flow vs operational target',
+      'Caudal': 'Flow',
+      'Volumen': 'Volume',
+      'Meta': 'Target',
+      'Sin datos': 'No data',
+      'Sin caudal registrado en este periodo': 'No flow recorded in this period',
+      'Sin lecturas para este periodo': 'No readings for this period',
+      'Prueba con otro rango de tiempo o actualiza los datos.': 'Try another time range or refresh the data.',
+      'Mín.': 'Min.',
+      'Prom.': 'Avg.',
+      'Máx.': 'Max.',
+      'Lecturas': 'Readings',
+      'Último': 'Latest',
+      'Inicio': 'Start',
+      'Acumulado': 'Cumulative',
+      'Plan de lixiviación': 'Leaching plan',
+      'Avance vs meta del ciclo': 'Progress vs cycle target',
+      'Razón actual': 'Current ratio',
+      'Meta ciclo': 'Cycle target',
+      'Volumen periodo': 'Period volume',
+      'Brecha de caudal': 'Flow gap',
+      'Proyección ciclo': 'Cycle projection',
+      'Inicio del ciclo': 'Cycle start',
+      'Avance del ciclo': 'Cycle progress',
+      'Días restantes': 'Days remaining',
+      'Alertas': 'Alerts',
+      'Dispositivo': 'Device',
+      'Equipo Omega': 'Omega unit',
+      'Firmware': 'Firmware',
+      'Modelo': 'Model',
+      'Comunicación': 'Communication',
+      'Zona horaria': 'Time zone',
+      'Última sinc.': 'Last sync.',
+      'Ubicación': 'Location',
+      'Últimas lecturas': 'Latest readings',
+      'Registro crudo recibido desde el medidor': 'Raw records received from the meter',
+      'Fecha y hora': 'Date and time',
+      'Estado': 'Status',
+      'Cargando lecturas…': 'Loading readings…',
+      'Tipo': 'Type',
+      'Intervalo de registro': 'Log interval',
+      'Intervalo de lectura': 'Read interval',
+      'Unidad de caudal': 'Flow unit',
+      'Unidad de volumen': 'Volume unit',
+      'Registro Modbus': 'Modbus register',
+      'Fuente:': 'Source:',
+      '· proyecto': '· project',
+      'Ventana: —': 'Window: —',
+      'Actualización automática cada 60 s.': 'Auto-refresh every 60 s.',
+      'En línea': 'Online',
+      'Fuera de línea': 'Offline',
+      'Datos retrasados': 'Stale data',
+      'Sin conexión · copia guardada': 'Offline · saved copy',
+      'Estable': 'Stable',
+      'Cargando': 'Charging',
+      'Descargando': 'Discharging',
+      'Crítico': 'Critical',
+      'Sin descarga': 'No discharge',
+      'Sin datos de energía': 'No power data',
+      'sin tendencia': 'no trend',
+      'Sobre la meta': 'Above target',
+      'En meta': 'On target',
+      'Cerca de la meta': 'Near target',
+      'Bajo la meta': 'Below target',
+      'en la meta': 'on target',
+      'Sin alertas activas': 'No active alerts',
+      'BERMAD no reporta eventos en el periodo.': 'BERMAD reports no events in the period.',
+      'Sin lecturas en el periodo seleccionado.': 'No readings in the selected period.',
+      'Sin fecha': 'No date',
+      'Alerta': 'Alert',
+      'Flujo': 'Flow',
+      'Sin flujo': 'No flow',
+      'Sin flujo': 'No flow',
+      'Caudal bajo detectado (simulación)': 'Low flow detected (simulation)',
+      'Caudalímetro principal (simulado)': 'Main flow meter (simulated)',
+      'Caudalímetro El Salvador': 'El Salvador flow meter',
+      'Omega El Salvador (simulado)': 'El Salvador Omega (simulated)',
+      'Omega 4G': 'Omega 4G',
+      'Simulador local': 'Local simulator',
+      'Datos de ejemplo generados localmente': 'Sample data generated locally',
+      'Datos simulados localmente (sin conexión a BERMAD)': 'Data simulated locally (no BERMAD connection)',
+      'Modo simulador · datos de ejemplo generados en el navegador.': 'Simulator mode · sample data generated in the browser.',
+      'Medidor de caudal': 'Flow meter',
+      'Medidor principal': 'Main meter',
+      'Sin datos de presión': 'No pressure data',
+      'Sin datos de temperatura': 'No temperature data',
+      'Esta variable se incorporará próximamente.': 'This variable will be added soon.',
+      'Caudal (en vivo)': 'Flow (live)',
+      'Presión (en vivo)': 'Pressure (live)',
+      'Temperatura (en vivo)': 'Temperature (live)',
+      'Volumen (última lectura)': 'Volume (last reading)',
+      'Volumen acumulado vs meta diaria': 'Cumulative volume vs daily target',
+      'Volumen acumulado': 'Cumulative volume',
+      'Meta diaria': 'Daily target',
+      'Meta de caudal': 'Flow target',
+      'Últimas 24 horas · resolución 2 min': 'Last 24 hours · 2 min resolution',
+      'Fecha (UTC)': 'Date (UTC)',
+      'Caudal (m3/h)': 'Flow (m3/h)',
+      'El volumen mostrado es una estimación por integración del caudal': 'The displayed volume is an estimate by flow integration',
+      'Error de red': 'Network error',
+      'error de red': 'network error',
+      'tiempo de espera agotado (90 s)': 'timeout (90 s)',
+      'Cambiar tema': 'Toggle theme',
+      'Configurar backend API': 'Configure API backend',
+      'Fuente de datos': 'Data source',
+      'Estado de la conexión con BERMAD': 'BERMAD connection status',
+    };
+
+    const I18N_PATTERNS = [
+      [/^Datos al (.+)$/, 'Data as of $1'],
+      [/^razón (.+) m³\/t · (\d+) días$/, 'ratio $1 m³/t · $2 days'],
+      [/^faltan (.+) m³\/h$/, '$1 m³/h short'],
+      [/^RL real · (.+)$/, 'Actual LR · $1'],
+      [/^Prom\. (.+) (psi|°C) · (.+) lecturas$/, 'Avg. $1 $2 · $3 readings'],
+      [/^Batería Omega · (.+)$/, 'Omega battery · $1'],
+      [/^Carga (\d+)%$/, 'Charge $1%'],
+      [/^≈ (.+) días$/, '≈ $1 days'],
+      [/^> 30 días$/, '> 30 days'],
+      [/^(\d+) muestras · (.+) h$/, '$1 samples · $2 h'],
+      [/^corte (.+) V$/, 'cutoff $1 V'],
+      [/^régimen desde (.+)$/, 'regime since $1'],
+      [/^Diseño (.+) m³\/h$/, 'Design $1 m³/h'],
+      [/^Rol (.+)$/, 'Role $1'],
+      [/^No se pudo cargar la telemetría: (.+)$/, 'Could not load telemetry: $1'],
+      [/^No se pudo exportar el CSV: (.+)$/, 'Could not export CSV: $1'],
+      [/Verifica que (.+) esté disponible y permita peticiones desde este origen\./, 'Check that $1 is available and allows requests from this origin.'],
+      [/Verifica que el servidor esté ejecutándose \(python3 serve\.py\) o configura la URL del backend con el botón de ajustes\./, 'Check that the server is running (python3 serve.py) or set the backend URL with the settings button.'],
+      [/^Meta a la fecha: (.+)$/, 'Target to date: $1'],
+      [/^Meta: (.+)$/, 'Target: $1'],
+    ];
+
+    const I18N_WORDS = [
+      [/ % del flujo recomendado/g, ' % of recommended flow'],
+      [/ % de la RL ejecutada/g, ' % of executed LR'],
+      [/ m³\/h sobre la meta/g, ' m³/h above target'],
+      [/ m³\/h bajo la meta/g, ' m³/h below target'],
+      [/ lecturas · integración (\d+) min/g, ' readings · $1 min integration'],
+      [/^meta (.+) m³\/día$/, 'target $1 m³/day'],
+      [/ m³\/día/g, ' m³/day'],
+      [/ mV\/día/g, ' mV/day'],
+      [/ lecturas/g, ' readings'],
+      [/ lect\./g, ' read.'],
+      [/ días/g, ' days'],
+      [/ día /g, ' day '],
+      [/· día /g, '· day '],
+      [/ resolución /g, ' resolution '],
+      [/ integración /g, ' integration '],
+      [/ promedio /g, ' average '],
+      [/ última lectura recibida/g, ' last reading received'],
+      [/ caudal instantáneo/g, ' instantaneous flow'],
+      [/ volumen integrado/g, ' integrated volume'],
+      [/ sin datos \(próximamente\)/g, ' no data (coming soon)'],
+      [/Actualizado /g, 'Updated '],
+      [/ datos en vivo/g, ' live data'],
+      [/ datos en caché/g, ' cached data'],
+      [/ copia de respaldo sin conexión/g, ' offline fallback copy'],
+      [/ simulación local/g, ' local simulation'],
+      [/ actualización automática cada/g, ' auto-refresh every'],
+      [/Ventana: /g, 'Window: '],
+      [/ sobre la meta/g, ' above target'],
+      [/ bajo la meta/g, ' below target'],
+      [/ en la meta/g, ' on target'],
+      [/^faltan /g, 'short '],
+      [/ Diseño: /g, ' Design: '],
+      [/ proyectado: /g, ' projected: '],
+      [/El volumen mostrado es una estimación por integración del caudal \((\d+) min\)\. El totalizador del medidor no viene incluido en la respuesta actual de la API\./g, 'The displayed volume is an estimate by flow integration ($1 min). The meter totalizer is not included in the current API response.'],
+    ];
+
+    function tr(es) { return LANG === 'en' ? (I18N_EXACT[es] || es) : es; }
+
+    function translateText(value) {
+      if (LANG !== 'en' || !value) return value;
+      const trimmed = value.trim();
+      if (trimmed && I18N_EXACT[trimmed]) return value.replace(trimmed, I18N_EXACT[trimmed]);
+      let out = value;
+      for (const [re, rep] of I18N_PATTERNS) out = out.replace(re, rep);
+      for (const [re, rep] of I18N_WORDS) out = out.replace(re, rep);
+      return out;
+    }
+
+    function applyLang() {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      for (const node of nodes) {
+        const parent = node.parentElement;
+        if (!parent || parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE') continue;
+        if (LANG === 'en') {
+          if (node.__es === undefined) node.__es = node.nodeValue;
+          const next = translateText(node.__es);
+          if (next !== node.nodeValue) node.nodeValue = next;
+        } else if (node.__es !== undefined && node.nodeValue !== node.__es) {
+          node.nodeValue = node.__es;
+        }
+      }
+      document.querySelectorAll('[title],[placeholder],[aria-label]').forEach((el) => {
+        el.__i18nOrig = el.__i18nOrig || {};
+        for (const attr of ['title', 'placeholder', 'aria-label']) {
+          const current = el.getAttribute(attr);
+          if (current === null) continue;
+          if (LANG === 'en') {
+            if (el.__i18nOrig[attr] === undefined) el.__i18nOrig[attr] = current;
+            const next = translateText(el.__i18nOrig[attr]);
+            if (next !== current) el.setAttribute(attr, next);
+          } else if (el.__i18nOrig[attr] !== undefined && current !== el.__i18nOrig[attr]) {
+            el.setAttribute(attr, el.__i18nOrig[attr]);
+          }
+        }
+      });
+    }
+
+    function updateLangBtn() {
+      const button = $('#langBtn');
+      if (!button) return;
+      if (LANG === 'en') {
+        $('#langFlag').textContent = '🇪🇸';
+        $('#langLabel').textContent = 'Español';
+        const title = 'Cambiar a español';
+        button.title = title;
+        button.setAttribute('aria-label', title);
+      } else {
+        $('#langFlag').textContent = '🇬🇧';
+        $('#langLabel').textContent = 'English';
+        const title = 'Switch to English';
+        button.title = title;
+        button.setAttribute('aria-label', title);
+      }
+      const rl = $('#refreshLabel');
+      if (rl) rl.textContent = tr('Actualizar');
+    }
+
+    function setLang(lang) {
+      LANG = lang === 'en' ? 'en' : 'es';
+      try { localStorage.setItem('bermad-lang', LANG); } catch (e) {}
+      updateLangBtn();
+      if (state.data) render(state.data);
+      applyLang();
     }
 
     function bindEvents() {
@@ -3674,6 +4008,7 @@
         setTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
         if (state.data) renderChart(state.data);
       });
+      $('#langBtn').addEventListener('click', () => setLang(LANG === 'en' ? 'es' : 'en'));
 
       ['#inputTons', '#inputDays', '#inputStart', '#inputRatio', '#inputArea', '#inputRate'].forEach((selector) => {
         $(selector).addEventListener('input', () => {
@@ -3762,6 +4097,8 @@
     loadPlan();
     updateSourceChrome();
     bindEvents();
+    updateLangBtn();
+    applyLang();
     loadDashboard(false);
   </script>
 </body>
