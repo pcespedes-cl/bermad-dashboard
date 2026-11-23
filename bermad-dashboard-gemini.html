@@ -502,8 +502,9 @@
       display: grid;
       place-items: center;
       border-radius: 10px;
-      background: var(--brand-soft);
-      color: var(--brand);
+      background: rgba(0, 22, 52, .55);
+      color: #ffd60a;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, .35), 0 2px 6px rgba(0, 0, 0, .35);
     }
 
     .op-icon svg { width: 17px; height: 17px; }
@@ -972,7 +973,8 @@
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: conic-gradient(var(--brand) calc(var(--p, 0) * 1%), var(--line) 0);
+      background: conic-gradient(var(--brand) calc(var(--p, 0) * 1%), rgba(0, 22, 52, .55) 0);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, .35), 0 2px 6px rgba(0, 0, 0, .35);
       display: grid;
       place-items: center;
       flex: 0 0 auto;
@@ -984,12 +986,13 @@
       width: 27px;
       height: 27px;
       border-radius: 50%;
-      background: var(--panel);
+      background: rgba(0, 22, 52, .85);
     }
 
     .coverage-ring span {
       position: absolute;
-      font-size: 8.5px;
+      color: #ffffff;
+      font-size: 9.5px;
       font-weight: 800;
       letter-spacing: -.02em;
     }
@@ -1000,15 +1003,16 @@
       border-radius: 9px;
       display: grid;
       place-items: center;
-      background: var(--brand-soft);
-      color: var(--brand);
+      background: rgba(0, 22, 52, .55);
+      color: #ffd60a;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, .35), 0 2px 6px rgba(0, 0, 0, .35);
       flex: 0 0 auto;
     }
 
-    .kpi-icon svg { width: 15px; height: 15px; }
-    .kpi-icon.green { background: var(--green-soft); color: var(--green); }
-    .kpi-icon.amber { background: var(--amber-soft); color: var(--amber); }
-    .kpi-icon.violet { background: var(--violet-soft); color: var(--violet); }
+    .kpi-icon svg { width: 16px; height: 16px; }
+    .kpi-icon.green { color: #30ff8e; }
+    .kpi-icon.amber { color: #ffb020; }
+    .kpi-icon.violet { color: #ff7ae0; }
 
     /* ---------- Cards / layout ---------- */
     .card {
@@ -1306,9 +1310,9 @@
       line-height: 1.45;
     }
 
-    .coverage-ring.is-good { --ring-color: var(--green); }
-    .coverage-ring.is-warn { --ring-color: var(--amber); }
-    .coverage-ring.is-bad { --ring-color: var(--red); }
+    .coverage-ring.is-good { --ring-color: #30ff8e; }
+    .coverage-ring.is-warn { --ring-color: #ffb020; }
+    .coverage-ring.is-bad { --ring-color: #ff5f57; }
     .coverage-ring { background: conic-gradient(var(--ring-color, var(--brand)) calc(var(--p, 0) * 1%), var(--line) 0); }
 
     .badge {
