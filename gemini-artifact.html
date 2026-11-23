@@ -2214,6 +2214,7 @@
       loading: false,
       lastLoadedAt: 0,
       live: false,
+      lastLoadFailed: false,
     };
     let plan = { ...PLAN_DEFAULTS };
 
@@ -2768,6 +2769,7 @@
           if (controller.signal.aborted) return;
           state.data = payload;
           state.lastLoadedAt = Date.now();
+          state.lastLoadFailed = false;
           render(payload);
           return;
         }
@@ -2780,10 +2782,12 @@
         }
         state.data = payload;
         state.lastLoadedAt = Date.now();
+        state.lastLoadFailed = false;
         render(payload);
       } catch (error) {
         if (error.name === 'AbortError' && !timedOut) return;
         if (state.source !== 'api') return;
+        state.lastLoadFailed = true;
         const detail = timedOut ? 'tiempo de espera agotado (90 s)' : (error.message || 'Error de red');
         const hint = state.apiBase
           ? `Verifica que ${state.apiBase} esté disponible y permita peticiones desde este origen.`
@@ -3659,14 +3663,14 @@
       observer.observe($('#chartWrap'));
 
       window.setInterval(() => {
-        const threshold = state.live ? 8000 : 55000;
+        const threshold = state.lastLoadFailed ? 10000 : (state.live ? 8000 : 55000);
         if (!document.hidden && Date.now() - state.lastLoadedAt > threshold) {
           loadDashboard(false);
         }
       }, 10000);
 
       document.addEventListener('visibilitychange', () => {
-        const threshold = state.live ? 8000 : 60000;
+        const threshold = state.lastLoadFailed ? 10000 : (state.live ? 8000 : 60000);
         if (!document.hidden && Date.now() - state.lastLoadedAt > threshold) {
           loadDashboard(false);
         }
