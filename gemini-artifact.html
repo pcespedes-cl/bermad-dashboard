@@ -3416,7 +3416,7 @@
               ? 'Presión'
               : 'Caudal vs meta operativa';
         const rangeText = (state.rangeFrom && state.rangeTo)
-          ? `${fmtDateOnly(state.rangeFrom)} → ${fmtDateOnly(state.rangeTo)}`
+          ? `${fmtDateOnly(String(state.rangeFrom).slice(0, 10))} → ${fmtDateOnly(String(state.rangeTo).slice(0, 10))}`
           : rangeLabel(hours);
         $('#chartSubtitle').textContent = `${rangeText} · resolución ${intervalMin} min · ${
           isVolume
