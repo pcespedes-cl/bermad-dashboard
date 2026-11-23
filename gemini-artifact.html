@@ -2243,6 +2243,10 @@
       return state.data?.window?.timezone || DEFAULT_TZ;
     }
 
+    function isLocalOrigin() {
+      return location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+    }
+
     function todayDateStr() {
       try {
         const parts = new Intl.DateTimeFormat('en-CA', {
@@ -2502,6 +2506,10 @@
       state.source = next;
       store.set(SOURCE_KEY, state.source);
       updateSourceChrome();
+      if (next === 'api' && !state.apiBase && !isLocalOrigin()) {
+        showError('Para consultar la API configura la URL del backend con el botón de ajustes (⚙), por ejemplo https://tu-backend.onrender.com.');
+        return;
+      }
       if (next === 'api' && !state.apiBase && location.protocol === 'file:') {
         showError('Para consultar la API abre http://127.0.0.1:8765/ o configura la URL del backend con el botón de ajustes (⚙).');
         return;
@@ -2743,7 +2751,15 @@
       setLoading(true);
       hideError();
 
+      if (state.source === 'api' && !state.apiBase && !isLocalOrigin()) {
+        showError('Para consultar la API configura la URL del backend con el botón de ajustes (⚙).');
+        setLoading(false);
+        return;
+      }
+
       const loadHours = state.live ? 1 : state.hours;
+      let timedOut = false;
+      const timeoutId = setTimeout(() => { timedOut = true; controller.abort(); }, 90000);
       try {
         if (state.source === 'sim') {
           await delay(380, controller.signal);
@@ -2765,16 +2781,15 @@
         state.lastLoadedAt = Date.now();
         render(payload);
       } catch (error) {
-        if (error.name === 'AbortError' || controller.signal.aborted) return;
+        if (error.name === 'AbortError' && !timedOut) return;
         if (state.source !== 'api') return;
-        const detail = error.message || 'Error de red';
-        const hint = state.source === 'api'
-          ? state.apiBase
-            ? `Verifica que ${state.apiBase} esté disponible y permita peticiones desde este origen.`
-            : 'Verifica que el servidor esté ejecutándose (python3 serve.py) o configura la URL del backend con el botón de ajustes.'
-          : 'Vuelve a intentarlo o cambia a modo API.';
+        const detail = timedOut ? 'tiempo de espera agotado (90 s)' : (error.message || 'Error de red');
+        const hint = state.apiBase
+          ? `Verifica que ${state.apiBase} esté disponible y permita peticiones desde este origen.`
+          : 'Verifica que el servidor esté ejecutándose (python3 serve.py) o configura la URL del backend con el botón de ajustes.';
         showError(`No se pudo cargar la telemetría: ${detail}. ${hint}`);
       } finally {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     }
