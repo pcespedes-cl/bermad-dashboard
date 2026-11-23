@@ -2747,11 +2747,27 @@
       if (state.source === 'api') loadDashboard(true);
     }
 
-    function buildSimulatedDashboard(hours) {
-      const now = new Date();
+    function buildSimulatedDashboard(hours, start, end) {
       const interval = 2;
       const tz = 'America/Santiago';
-      const count = Math.max(24, Math.round(hours * 60 / interval));
+      let now = new Date();
+      let fromTime = null;
+      if (start && end) {
+        try {
+          fromTime = new Date(start);
+          now = new Date(end);
+          if (isNaN(fromTime.getTime()) || isNaN(now.getTime())) throw new Error('bad');
+        } catch (e) {
+          fromTime = null; now = new Date();
+        }
+      }
+      if (!fromTime) {
+        now = new Date();
+        fromTime = new Date(now.getTime() - (hours || 24) * 3600000);
+      }
+      const spanMs = Math.max(interval * 60000, now.getTime() - fromTime.getTime());
+      const count = Math.max(24, Math.round(spanMs / (interval * 60000)));
+      hours = Math.max(1, Math.round(spanMs / 3600000));
       const targetFlow = (plan.tons * plan.ratio / plan.days) / 24;
       const designFlow = (plan.area * plan.rate) / 1000;
       const series = [];
@@ -2845,7 +2861,6 @@
         entityId: 'SIM-METER-1',
       }));
 
-      const fromTime = new Date(now.getTime() - hours * 3600000);
       const voltage = 6.38 - (now.getMinutes() / 60) * 0.03;
       const battery = {
         available: true,
@@ -2860,10 +2875,10 @@
         cutoff: 5.4,
         estimatedDays: 21.8,
         estimatedHours: 523.2,
-        samples: 240,
-        spanHours: 48,
+        samples: Math.min(240, count),
+        spanHours: hours,
         lastReading: new Date(now.getTime() - 60000).toISOString(),
-        regimeStart: new Date(now.getTime() - 48 * 3600000).toISOString(),
+        regimeStart: fromTime.toISOString(),
         stepDetected: false,
         windowHours: 48,
       };
@@ -2967,7 +2982,7 @@
       try {
         if (state.source === 'sim') {
           await delay(380, controller.signal);
-          const payload = buildSimulatedDashboard(loadHours);
+          const payload = buildSimulatedDashboard(loadHours, state.rangeFrom, state.rangeTo);
           if (controller.signal.aborted) return;
           state.data = payload;
           state.lastLoadedAt = Date.now();
