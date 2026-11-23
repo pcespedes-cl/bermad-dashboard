@@ -1,1 +1,4 @@
-# Sin dependencias externas: solo biblioteca estándar de Python 3.10+
+# Dependencias del backend Smart - Lix
+# `certifi` asegura la verificación TLS de la API de BERMAD en cualquier entorno
+# (Linux, macOS, contenedores). No requiere compilación.
+certifi>=2023.7.22

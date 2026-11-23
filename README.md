@@ -49,6 +49,20 @@ HOST=127.0.0.1
 Copia `.env.example` a `.env` y completa `BERMAD_API_KEY`. Para exponer en la red
 local usa `HOST=0.0.0.0`.
 
+## Despliegue en producción
+
+El backend puede ejecutarse en cualquier servicio que corra Python y exponga un
+puerto HTTP. La configuración lista para **Render** está en `render.yaml`
+(`HOST=0.0.0.0`, health check en `/api/health`, Python 3.12 y `certifi`).
+
+Guía paso a paso: **[DEPLOY.md](DEPLOY.md)**. Resumen:
+
+1. Subir el repositorio a GitHub (sin `.env`).
+2. Render → **New + → Blueprint** → elegir el repositorio.
+3. Definir `BERMAD_API_KEY` cuando Render la solicite.
+4. Verificar `https://TU-URL.onrender.com/api/health?deep=1`.
+5. Pegar esa URL en el botón **⚙** del artifact de Gemini.
+
 ## Qué muestra
 
 - **Gestión de flujos**: caudal actual con fecha y hora de la lectura, caudal
