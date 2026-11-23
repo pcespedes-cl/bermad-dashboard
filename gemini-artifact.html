@@ -1281,6 +1281,7 @@
 
     /* ---------- Plan / device / alerts ---------- */
     .plan-card, .device-card, .alerts-card, .meter-card { padding: 17px; }
+    .plan-card { color: #ffffff; --text: #ffffff; --muted: #ffffff; --muted-2: #ffffff; }
 
     .alerts-card { min-height: 134px; }
 
@@ -1796,6 +1797,10 @@
     [data-theme="dark"] .api-config input { background: rgba(255, 255, 255, .08); color: var(--text); }
     [data-theme="dark"] .api-config button { background: rgba(255, 255, 255, .12); color: var(--text); }
     [data-theme="dark"] .api-config button.primary { background: #0a84ff; color: #ffffff; }
+    [data-theme="dark"] .plan-card { color: #ffffff; --text: #ffffff; --muted: #ffffff; --muted-2: #ffffff; }
+    [data-theme="dark"] .plan-card .plan-progress-head { color: #ffffff; }
+    [data-theme="dark"] .plan-card .plan-list span { color: #ffffff; }
+    [data-theme="dark"] .plan-card .plan-note { color: #ffffff; }
     [data-theme="dark"] .kpi-icon,
     [data-theme="dark"] .op-icon {
       background: rgba(255, 255, 255, .10);
