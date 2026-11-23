@@ -2244,8 +2244,10 @@
       return state.data?.window?.timezone || DEFAULT_TZ;
     }
 
-    function isLocalOrigin() {
-      return location.hostname === '127.0.0.1' || location.hostname === 'localhost';
+    function canUseSameOriginApi() {
+      // Cualquier página servida por http(s) puede usar /api del mismo origen
+      // (localhost, túnel o Render). Solo file:// necesita una URL configurada.
+      return location.protocol === 'http:' || location.protocol === 'https:';
     }
 
     function todayDateStr() {
@@ -2508,12 +2510,8 @@
       state.source = next;
       store.set(SOURCE_KEY, state.source);
       updateSourceChrome();
-      if (next === 'api' && !state.apiBase && !isLocalOrigin()) {
-        showError('Para consultar la API configura la URL del backend con el botón de ajustes (⚙), por ejemplo https://tu-backend.onrender.com.');
-        return;
-      }
-      if (next === 'api' && !state.apiBase && location.protocol === 'file:') {
-        showError('Para consultar la API abre http://127.0.0.1:8765/ o configura la URL del backend con el botón de ajustes (⚙).');
+      if (next === 'api' && !state.apiBase && !canUseSameOriginApi()) {
+        showError('Para consultar la API abre http://127.0.0.1:8765/ o configura la URL del backend con el botón de ajustes (⚙), por ejemplo https://tu-backend.onrender.com.');
         return;
       }
       loadDashboard(false);
@@ -2753,7 +2751,7 @@
       setLoading(true);
       hideError();
 
-      if (state.source === 'api' && !state.apiBase && !isLocalOrigin()) {
+      if (state.source === 'api' && !state.apiBase && !canUseSameOriginApi()) {
         showError('Para consultar la API configura la URL del backend con el botón de ajustes (⚙).');
         setLoading(false);
         return;
