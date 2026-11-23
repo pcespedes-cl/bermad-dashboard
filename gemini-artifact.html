@@ -4185,15 +4185,17 @@
       const clearRangeBtn = $('#clearRangeBtn');
       if (clearRangeBtn) {
         clearRangeBtn.addEventListener('click', () => {
-          state.rangeFrom = null;
-          state.rangeTo = null;
+          const defaultStart = plan.start || todayDateStr();
+          const defaultEnd = todayDateStr();
           const df = $('#dateFrom'); const dt = $('#dateTo');
-          if (df) df.value = '';
-          if (dt) dt.value = '';
+          if (df) df.value = defaultStart;
+          if (dt) dt.value = defaultEnd;
+          state.rangeFrom = `${defaultStart}T00:00:00`;
+          state.rangeTo = `${defaultEnd}T23:59:59`;
           state.hours = 24;
-          const defaultBtn = document.querySelector('.range-control button[data-hours="24"]');
+          const liveBtn = document.querySelector('.live-btn');
+          if (liveBtn) liveBtn.classList.remove('active');
           $$('.range-control button').forEach((item) => item.classList.remove('active'));
-          if (defaultBtn) defaultBtn.classList.add('active');
           loadDashboard(true);
         });
       }
