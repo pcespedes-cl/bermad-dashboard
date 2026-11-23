@@ -4,6 +4,15 @@ El dashboard necesita un backend (no puede ser solo HTML estático) porque la
 **API key de BERMAD debe permanecer en el servidor**. `serve.py` sirve el panel y
 hace de proxy hacia BERMAD. Render ejecuta ese proceso y le asigna una URL HTTPS.
 
+## Estado actual (repositorio ya publicado)
+
+- Repositorio: <https://github.com/pcespedes-cl/bermad-dashboard>
+- Despliegue en un clic (Blueprint):
+  <https://render.com/deploy?repo=https://github.com/pcespedes-cl/bermad-dashboard>
+
+Abre ese enlace, inicia sesión en Render (gratis) y define `BERMAD_API_KEY`
+cuando lo solicite. Render leerá `render.yaml` y publicará la URL HTTPS.
+
 ## Requisitos
 
 - Cuenta gratuita de [GitHub](https://github.com).
