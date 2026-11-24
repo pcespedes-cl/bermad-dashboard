@@ -1796,8 +1796,8 @@
     .card .trend-flat { color: #ffffff; }
     .card .flow-value,
     .kpi .flow-value { color: #ffffff; }
-    .card #chartLine { stroke: #39ff8e; }
-    .card #chartDot { fill: #39ff8e; }
+    .card #chartLine { stroke: #00bfff; }
+    .card #chartDot { fill: #00bfff; }
     .card #chartTargetLine { stroke: #ff453a; }
     .card .chart-toggle button.active {
       background: linear-gradient(145deg, #39ff8e, #00ff88);
@@ -2234,7 +2234,7 @@
                 </select>
               </label>
               <div class="chart-legend" aria-hidden="true">
-                <span class="legend-item"><span class="legend-line" style="background:#39ff8e"></span><span id="legendActual">Caudal</span></span>
+                <span class="legend-item"><span class="legend-line" style="background:#00bfff"></span><span id="legendActual">Caudal</span></span>
                 <span class="legend-item" id="legendSecondItem" style="display:none"><span class="legend-line" style="background:#ff9f0a"></span><span id="legendSecond">—</span></span>
                 <span class="legend-item"><span class="legend-target"></span><span id="legendTarget">Meta</span></span>
                 <span class="legend-item"><span class="legend-gap"></span>Sin datos</span>
@@ -2253,9 +2253,9 @@
             <svg id="chart" preserveAspectRatio="none" role="img" aria-label="Gráfico de caudal en el tiempo">
               <defs>
                 <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stop-color="#39ff8e" stop-opacity=".34"></stop>
-                  <stop offset="72%" stop-color="#39ff8e" stop-opacity=".05"></stop>
-                  <stop offset="100%" stop-color="#39ff8e" stop-opacity="0"></stop>
+                  <stop offset="0%" stop-color="#00bfff" stop-opacity=".34"></stop>
+                  <stop offset="72%" stop-color="#00bfff" stop-opacity=".05"></stop>
+                  <stop offset="100%" stop-color="#00bfff" stop-opacity="0"></stop>
                 </linearGradient>
                 <pattern id="gapPattern" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
                   <line x1="0" y1="0" x2="0" y2="7" stroke="currentColor" stroke-opacity=".18" stroke-width="1.5"></line>
@@ -3479,7 +3479,7 @@
       leftTitle.setAttribute('y', pad.t + plotH / 2);
       leftTitle.setAttribute('text-anchor', 'middle');
       leftTitle.setAttribute('class', 'axis-text');
-      leftTitle.setAttribute('fill', '#39ff8e');
+      leftTitle.setAttribute('fill', '#00bfff');
       leftTitle.setAttribute('transform', `rotate(-90 ${pad.l - 40} ${pad.t + plotH / 2})`);
       leftTitle.textContent = `${varLabel(var1Name)} (${varUnit(var1Name)})`;
       axis.appendChild(leftTitle);
