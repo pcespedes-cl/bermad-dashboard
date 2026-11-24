@@ -373,6 +373,35 @@
       flex: 0 0 auto;
     }
 
+    .page-head-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .report-btn {
+      height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 0 12px;
+      border: 1px solid var(--line-strong);
+      border-radius: 9px;
+      background: var(--panel);
+      color: var(--text);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .02em;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+
+    .report-btn:hover { background: var(--blue-hover); }
+
     .eyebrow {
       margin: 0 0 5px;
       color: var(--brand);
@@ -1979,10 +2008,13 @@
           <p class="subhead">Medidor <strong id="meterName">—</strong></p>
         </div>
         <div class="page-head-actions">
-          <button class="lang-btn" id="langBtn" type="button" title="Switch to English" aria-label="Switch to English">
-            <span class="flag" id="langFlag" aria-hidden="true">🇬🇧</span>
-            <span id="langLabel">English</span>
-          </button>
+          <div class="page-head-top">
+            <button class="report-btn" id="reportBtn" type="button" title="Generar reporte operacional en PDF" aria-label="Generar reporte operacional en PDF">Reporte Operacional</button>
+            <button class="lang-btn" id="langBtn" type="button" title="Switch to English" aria-label="Switch to English">
+              <span class="flag" id="langFlag" aria-hidden="true">🇬🇧</span>
+              <span id="langLabel">English</span>
+            </button>
+          </div>
           <div class="range-control" role="group" aria-label="Rango de tiempo">
             <button type="button" class="live-btn" data-live="1" title="Mostrar solo el último dato recibido"><span class="live-dot"></span>En vivo</button>
             <button type="button" data-hours="6">6 h</button>
@@ -4015,6 +4047,117 @@
       }
     }
 
+    function openOperationalReport() {
+      const data = state.data;
+      if (!data) { showError('No hay datos para generar el reporte.'); return; }
+      const win = window.open('', 'reporte_operacional', 'width=1020,height=780,scrollbars=yes,resizable=yes');
+      if (!win) { showError('Permite las ventanas emergentes para generar el reporte.'); return; }
+
+      const p = computePlan(data);
+      const stats = data.stats || {};
+      const device = data.device || {};
+      const meter = data.meter || {};
+      const alerts = Array.isArray(data.alerts) ? data.alerts : [];
+      const now = new Date().toLocaleString('es-CL');
+      const chartSvg = document.querySelector('#chart') ? document.querySelector('#chart').outerHTML : '';
+
+      const alertsHtml = alerts.length
+        ? alerts.slice(0, 12).map((a) => {
+            const title = a.name || a.title || a.message || a.type || a.alertType || 'Alerta';
+            const when = a.dateTime || a.createdAt || a.time?.created || a.time;
+            return `<li><strong>${escapeHtml(title)}</strong>${when ? ' — ' + escapeHtml(fmtDateTime(when)) : ''}</li>`;
+          }).join('')
+        : '<li>Sin alertas activas.</li>';
+
+      const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Reporte Operacional — Smart - Lix</title>
+<style>
+  :root { --blue: #005bb5; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 24px; color: #1d1d1f; background: #f5f5f7; }
+  .page { max-width: 980px; margin: 0 auto; background: #fff; padding: 32px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,.08); }
+  h1 { margin: 0 0 4px; font-size: 24px; color: #005bb5; }
+  h2 { margin: 22px 0 8px; font-size: 15px; color: #005bb5; border-bottom: 2px solid #005bb5; padding-bottom: 4px; }
+  .meta { color: #6e6e73; font-size: 12px; margin-bottom: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px 20px; }
+  .kv { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #e5e5ea; font-size: 13px; }
+  .kv span { color: #6e6e73; }
+  .kv strong { color: #1d1d1f; }
+  .chart-wrap { margin: 12px 0; border: 1px solid #e5e5ea; border-radius: 10px; padding: 8px; background: #f2f2f7; overflow: hidden; }
+  .chart-wrap svg { width: 100%; height: auto; display: block; }
+  ul { margin: 6px 0 0 18px; padding: 0; }
+  li { margin: 4px 0; font-size: 13px; }
+  .actions { margin: 20px 0 0; display: flex; gap: 10px; }
+  .btn { padding: 9px 16px; border: 0; border-radius: 9px; font-size: 13px; font-weight: 700; cursor: pointer; }
+  .btn-primary { background: #005bb5; color: #fff; }
+  .btn-secondary { background: #e5e5ea; color: #1d1d1f; }
+  @media print { .actions { display: none; } body { background: #fff; padding: 0; } .page { box-shadow: none; border-radius: 0; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>Reporte Operacional — Smart - Lix</h1>
+  <div class="meta">Generado: ${escapeHtml(now)} · Proyecto ${escapeHtml(data.projectId || '—')} · Unidad ${escapeHtml(data.unitId || '—')}</div>
+
+  <h2>Resumen de flujo</h2>
+  <div class="grid">
+    <div class="kv"><span>Caudal actual</span><strong>${num(stats.current ?? stats.last, 2)} m³/h</strong></div>
+    <div class="kv"><span>Promedio 24 h</span><strong>${num(stats.avg, 2)} m³/h</strong></div>
+    <div class="kv"><span>Mínimo</span><strong>${num(stats.min, 2)} m³/h</strong></div>
+    <div class="kv"><span>Máximo</span><strong>${num(stats.max, 2)} m³/h</strong></div>
+    <div class="kv"><span>Volumen acumulado</span><strong>${num(stats.volume, 2)} m³</strong></div>
+    <div class="kv"><span>Lecturas</span><strong>${num(stats.points, 0)}</strong></div>
+    <div class="kv"><span>Meta de caudal</span><strong>${num(p.targetFlow, 2)} m³/h</strong></div>
+    <div class="kv"><span>Flujo recomendado</span><strong>${num(p.targetFlow, 2)} m³/h</strong></div>
+  </div>
+
+  <h2>Gráfica de caudal</h2>
+  <div class="chart-wrap">${chartSvg}</div>
+
+  <h2>Plan de lixiviación</h2>
+  <div class="grid">
+    <div class="kv"><span>Razón actual</span><strong>${escapeHtml(String(p.actualCycleRatio ?? '—'))} m³/t</strong></div>
+    <div class="kv"><span>RL ejecutada</span><strong>${escapeHtml(String(p.executedCycleRatio ?? '—'))} m³/t</strong></div>
+    <div class="kv"><span>Meta ciclo</span><strong>${escapeHtml(String(p.targetCycleRatio ?? '—'))} m³/t</strong></div>
+    <div class="kv"><span>Volumen periodo</span><strong>${num(p.volume, 2)} m³</strong></div>
+    <div class="kv"><span>Brecha de caudal</span><strong>${num(p.gapFlow, 2)} m³/h</strong></div>
+    <div class="kv"><span>Proyección ciclo</span><strong>${num(p.projection, 2)} m³</strong></div>
+    <div class="kv"><span>Inicio del ciclo</span><strong>${escapeHtml(String(p.start ?? '—'))}</strong></div>
+    <div class="kv"><span>Días restantes</span><strong>${escapeHtml(String(p.remainingDays ?? '—'))}</strong></div>
+  </div>
+
+  <h2>Alertas</h2>
+  <ul>${alertsHtml}</ul>
+
+  <h2>Dispositivo y medidor</h2>
+  <div class="grid">
+    <div class="kv"><span>Dispositivo</span><strong>${escapeHtml(device.name || '—')}</strong></div>
+    <div class="kv"><span>Estado</span><strong>${device.isOnline ? 'En línea' : 'Fuera de línea'}</strong></div>
+    <div class="kv"><span>Firmware</span><strong>${escapeHtml(device.firmware || '—')}</strong></div>
+    <div class="kv"><span>Modelo</span><strong>${escapeHtml(device.model || '—')}</strong></div>
+    <div class="kv"><span>Medidor</span><strong>${escapeHtml(meter.name || '—')}</strong></div>
+    <div class="kv"><span>Intervalo de registro</span><strong>${escapeHtml(String(meter.logInterval ?? '—'))} min</strong></div>
+    <div class="kv"><span>Unidad de caudal</span><strong>${escapeHtml(meter.flowUnits || '—')}</strong></div>
+    <div class="kv"><span>Unidad de volumen</span><strong>${escapeHtml(meter.volUnits || '—')}</strong></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn btn-primary" onclick="window.print()">Descargar PDF</button>
+    <button class="btn btn-secondary" onclick="window.close()">Cerrar</button>
+  </div>
+</div>
+</body>
+</html>`;
+
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+    }
+
+
     /* ---------- Internacionalización (ES / EN) ---------- */
     const I18N_EXACT = {
       'Monitor de flujo': 'Flow monitor',
@@ -4356,6 +4499,7 @@
         if (state.data) renderChart(state.data);
       });
       $('#langBtn').addEventListener('click', () => setLang(LANG === 'en' ? 'es' : 'en'));
+      $('#reportBtn')?.addEventListener('click', openOperationalReport);
 
       ['#inputTons', '#inputDays', '#inputStart', '#inputRatio', '#inputArea', '#inputRate'].forEach((selector) => {
         $(selector).addEventListener('input', () => {
