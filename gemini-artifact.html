@@ -3467,7 +3467,7 @@
         rightTitle.setAttribute('y', pad.t + plotH / 2);
         rightTitle.setAttribute('text-anchor', 'middle');
         rightTitle.setAttribute('class', 'axis-text');
-        rightTitle.setAttribute('fill', '#ff9f0a');
+        rightTitle.style.fill = '#ff9f0a';
         rightTitle.setAttribute('transform', `rotate(90 ${W - pad.r + 40} ${pad.t + plotH / 2})`);
         rightTitle.textContent = `${varLabel(var2Name)} (${varUnit(var2Name)})`;
         axis.appendChild(rightTitle);
@@ -3479,7 +3479,7 @@
       leftTitle.setAttribute('y', pad.t + plotH / 2);
       leftTitle.setAttribute('text-anchor', 'middle');
       leftTitle.setAttribute('class', 'axis-text');
-      leftTitle.setAttribute('fill', '#00bfff');
+      leftTitle.style.fill = '#00bfff';
       leftTitle.setAttribute('transform', `rotate(-90 ${pad.l - 40} ${pad.t + plotH / 2})`);
       leftTitle.textContent = `${varLabel(var1Name)} (${varUnit(var1Name)})`;
       axis.appendChild(leftTitle);
