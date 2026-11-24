@@ -3969,7 +3969,7 @@
             new Date(row.t).toISOString(),
             Number(row.v).toFixed(2),
             Number(row.v) > 0 ? tr('Flujo') : tr('Sin flujo'),
-            row.entity || tr('Medidor'),
+            'MUT7000',
           ]);
         });
         const csv = '\uFEFF' + rows

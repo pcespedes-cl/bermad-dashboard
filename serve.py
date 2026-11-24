@@ -826,7 +826,7 @@ class Handler(SimpleHTTPRequestHandler):
                         row.get("t") or "",
                         local_stamp(row.get("t") or ""),
                         value_text,
-                        row.get("entity") or "Medidor",
+                        "MUT7000",
                     ]
                 )
 
