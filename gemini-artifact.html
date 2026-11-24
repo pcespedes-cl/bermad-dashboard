@@ -4450,6 +4450,31 @@
         syncPlanHeight();
       }
 
+      // Alinea el borde inferior de "Últimas lecturas" con la última tarjeta lateral.
+      const tableCardEl = $('.table-card');
+      const meterCardEl = $('.meter-card');
+      const sideCards = ['.alerts-card', '.device-card', '.meter-card']
+        .map((sel) => $(sel))
+        .filter(Boolean);
+      const syncTableHeight = () => {
+        if (!tableCardEl || !meterCardEl) return;
+        if (!desktopLayout.matches) {
+          tableCardEl.style.height = '';
+          return;
+        }
+        const tableTop = tableCardEl.getBoundingClientRect().top;
+        const sideBottom = meterCardEl.getBoundingClientRect().bottom;
+        const target = Math.round(sideBottom - tableTop);
+        tableCardEl.style.height = target > 0 ? `${target}px` : '';
+      };
+      if (tableCardEl && meterCardEl) {
+        const tableHeightObserver = new ResizeObserver(syncTableHeight);
+        [chartCardEl, ...sideCards].forEach((el) => el && tableHeightObserver.observe(el));
+        window.addEventListener('resize', syncTableHeight);
+        desktopLayout.addEventListener('change', syncTableHeight);
+        syncTableHeight();
+      }
+
       window.setInterval(() => {
         const threshold = state.lastLoadFailed ? 10000 : (state.live ? 8000 : 55000);
         if (!document.hidden && Date.now() - state.lastLoadedAt > threshold) {
