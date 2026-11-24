@@ -2322,8 +2322,6 @@
               <h2>Plan de lixiviación</h2>
               <span class="badge badge-bad" id="planStatus">—</span>
             </div>
-            <div class="plan-body">
-              <div class="plan-main">
             <div class="plan-progress">
               <div class="plan-progress-head">
                 <span>Avance vs meta del ciclo</span>
@@ -2347,47 +2345,84 @@
               caudal de diseño = área × tasa de riego × 24 h × días. La fecha de inicio define el
               avance y los días restantes.
             </div>
-              </div>
-              <div class="plan-side">
-                <div class="rc-card">
-                  <h3 class="title"><span class="dot"></span>Recuperación de cobre en pilas</h3>
-                  <div class="rc-section">
-                    <h4>1. Balance metalúrgico</h4>
-                    <div class="formula">%R = ((Cu en PLS − Cu en Refino) / Cu Alimentado) × 100</div>
-                    <div class="formula">%R = (1 − Ley Cu Ripios / Ley Cu Cabeza) × 100</div>
-                  </div>
-                  <div class="rc-section">
-                    <h4>2. Óxidos (cinética rápida)</h4>
-                    <div class="formula">R(t) = Rmax · (1 − e^(−k·t))</div>
-                    <ul>
-                      <li>Rmax: recuperación máxima asintótica (×0.85–0.95)</li>
-                      <li>k: constante cinética (riego y ácido)</li>
-                      <li>Razón de solubilidad CuS/CuT = techo inicial</li>
-                      <li>CNA: consumo neto de ácido</li>
-                    </ul>
-                  </div>
-                  <div class="rc-section">
-                    <h4>3. Sulfuros (biolixiviación)</h4>
-                    <div class="formula">R(t) = R1·(1−e^(−k1·t)) + R2·(1−e^(−k2·t))</div>
-                    <ul>
-                      <li>Doble etapa: rápida + lenta (difusión/bacterias)</li>
-                      <li>Eh &gt; 650–700 mV vs SHE (Fe³⁺/Fe²⁺)</li>
-                      <li>Temp. ideal: 25–40 °C, aireación O₂/CO₂</li>
-                    </ul>
-                  </div>
-                  <div class="rc-section">
-                    <h4>4. Comparativa de diseño</h4>
-                    <table class="rc-table">
-                      <tr><th>Parámetro</th><th>Óxidos</th><th>Sulfuros</th></tr>
-                      <tr><td>Ciclo</td><td>45–120 d</td><td>180–500+ d</td></tr>
-                      <tr><td>Recup. típica</td><td>75–90%</td><td>60–80%</td></tr>
-                      <tr><td>Agente</td><td>H₂SO₄</td><td>Fe³⁺ + bacterias</td></tr>
-                      <tr><td>Escalamiento</td><td>0.90–0.95</td><td>0.80–0.90</td></tr>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
+          </article>
+
+          <article class="card" style="padding:0;overflow:hidden">
+<div class="rc-card" id="rcCard">
+  <h3 class="title"><span class="dot"></span>Recuperación de cobre en pilas</h3>
+  <div class="tabs">
+    <button class="tab active" data-mode="oxido">Óxidos</button>
+    <button class="tab" data-mode="sulfuro">Sulfuros</button>
+    <button class="tab" data-mode="balance">Balance</button>
+  </div>
+  <div class="mode" data-mode="oxido">
+    <div class="grid">
+      <div class="field"><label>Rmax (%)</label><input data-k="ox_Rmax" type="number" value="85"></div>
+      <div class="field"><label>k (1/día)</label><input data-k="ox_k" type="number" value="0.05"></div>
+      <div class="field"><label>Tiempo t (días)</label><input data-k="ox_t" type="number" value="60"></div>
+      <div class="field"><label>CuS/CuT (%)</label><input data-k="ox_ratio" type="number" value="70"></div>
+      <div class="field"><label>Factor escalamiento</label><input data-k="ox_factor" type="number" value="0.92"></div>
+    </div>
+  </div>
+  <div class="mode" data-mode="sulfuro" style="display:none">
+    <div class="grid">
+      <div class="field"><label>R1 (%)</label><input data-k="su_R1" type="number" value="30"></div>
+      <div class="field"><label>k1</label><input data-k="su_k1" type="number" value="0.08"></div>
+      <div class="field"><label>R2 (%)</label><input data-k="su_R2" type="number" value="50"></div>
+      <div class="field"><label>k2</label><input data-k="su_k2" type="number" value="0.01"></div>
+      <div class="field"><label>Tiempo t (días)</label><input data-k="su_t" type="number" value="240"></div>
+      <div class="field"><label>Factor</label><input data-k="su_factor" type="number" value="0.85"></div>
+    </div>
+  </div>
+  <div class="mode" data-mode="balance" style="display:none">
+    <div class="grid">
+      <div class="field"><label>Cu PLS (t)</label><input data-k="b_pls" type="number" value="45"></div>
+      <div class="field"><label>Cu Refino (t)</label><input data-k="b_ref" type="number" value="5"></div>
+      <div class="field"><label>Cu Alimentado (t)</label><input data-k="b_feed" type="number" value="100"></div>
+    </div>
+  </div>
+  <div class="results">
+    <div class="res"><div class="k">Recuperación</div><div class="v" id="rc_rec">—</div><div class="u">%</div></div>
+    <div class="res"><div class="k">Escalada</div><div class="v" id="rc_esc">—</div><div class="u">%</div></div>
+    <div class="res"><div class="k">Techo</div><div class="v" id="rc_techo">—</div><div class="u">%</div></div>
+    <div class="res"><div class="k">Balance</div><div class="v" id="rc_bal">—</div><div class="u">%</div></div>
+  </div>
+  <div class="status" id="rc_status">—</div>
+</div>
+<script>
+(function(){
+  const card=document.getElementById('rcCard');
+  const $=k=>card.querySelector('[data-k="'+k+'"]');
+  const val=k=>parseFloat($ (k).value)||0;
+  let mode='oxido';
+  card.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+    mode=t.dataset.mode;
+    card.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));
+    card.querySelectorAll('.mode').forEach(m=>m.style.display=m.dataset.mode===mode?'block':'none');
+    calc();
+  }));
+  function calc(){
+    let rec=0,esc=0,techo=0,bal=0;
+    if(mode==='oxido'){
+      const Rmax=val('ox_Rmax'),k=val('ox_k'),t=val('ox_t'),ratio=val('ox_ratio'),factor=val('ox_factor');
+      rec=Rmax*(1-Math.exp(-k*t)); esc=rec*factor; techo=ratio; if(rec>ratio){rec=ratio;esc=rec*factor;}
+    }else if(mode==='sulfuro'){
+      const R1=val('su_R1'),k1=val('su_k1'),R2=val('su_R2'),k2=val('su_k2'),t=val('su_t'),factor=val('su_factor');
+      rec=R1*(1-Math.exp(-k1*t))+R2*(1-Math.exp(-k2*t)); esc=rec*factor;
+    }else{
+      const pls=val('b_pls'),ref=val('b_ref'),feed=val('b_feed');
+      bal=feed>0?((pls-ref)/feed)*100:0;
+    }
+    card.querySelector('#rc_rec').textContent=rec?rec.toFixed(1):'—';
+    card.querySelector('#rc_esc').textContent=esc?esc.toFixed(1):'—';
+    card.querySelector('#rc_techo').textContent=techo?techo.toFixed(1):'—';
+    card.querySelector('#rc_bal').textContent=bal?bal.toFixed(1):'—';
+    card.querySelector('#rc_status').textContent= mode==='oxido'?'Óxidos: cinética rápida.': mode==='sulfuro'?'Sulfuros: doble etapa.':'Balance metalúrgico.';
+  }
+  card.querySelectorAll('input').forEach(i=>i.addEventListener('input',calc));
+  calc();
+})();
+</script
           </article>
 
           <article class="card alerts-card">
