@@ -1090,7 +1090,7 @@
     }
     .left-stack { display: grid; gap: 16px; grid-template-rows: auto 1fr; }
 
-    .side-stack { display: grid; gap: 16px; }
+    .side-stack { display: grid; gap: 16px; align-content: start; }
 
     .chart-card {
       padding: 19px 19px 15px;
@@ -4429,6 +4429,26 @@
         }, 90);
       });
       observer.observe($('#chartWrap'));
+
+      // Iguala la altura de la tarjeta de plan con la de la gráfica de caudal (solo escritorio).
+      const planCardEl = $('.plan-card');
+      const chartCardEl = $('.chart-card');
+      const desktopLayout = window.matchMedia('(min-width: 1021px)');
+      const syncPlanHeight = () => {
+        if (!planCardEl || !chartCardEl) return;
+        if (!desktopLayout.matches) {
+          planCardEl.style.height = '';
+          return;
+        }
+        const chartHeight = chartCardEl.getBoundingClientRect().height;
+        planCardEl.style.height = chartHeight ? `${Math.round(chartHeight)}px` : '';
+      };
+      if (planCardEl && chartCardEl) {
+        new ResizeObserver(syncPlanHeight).observe(chartCardEl);
+        window.addEventListener('resize', syncPlanHeight);
+        desktopLayout.addEventListener('change', syncPlanHeight);
+        syncPlanHeight();
+      }
 
       window.setInterval(() => {
         const threshold = state.lastLoadFailed ? 10000 : (state.live ? 8000 : 55000);
