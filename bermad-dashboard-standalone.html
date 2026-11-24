@@ -3469,13 +3469,14 @@
         axis.appendChild(rightTitle);
       }
 
-      // Etiqueta de la variable en el eje izquierdo
+      // Etiqueta de la variable en el eje izquierdo (vertical, junto a la escala)
       const leftTitle = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      leftTitle.setAttribute('x', pad.l - 9);
-      leftTitle.setAttribute('y', pad.t - 4);
-      leftTitle.setAttribute('text-anchor', 'end');
+      leftTitle.setAttribute('x', pad.l - 40);
+      leftTitle.setAttribute('y', pad.t + plotH / 2);
+      leftTitle.setAttribute('text-anchor', 'middle');
       leftTitle.setAttribute('class', 'axis-text');
       leftTitle.setAttribute('fill', '#39ff8e');
+      leftTitle.setAttribute('transform', `rotate(-90 ${pad.l - 40} ${pad.t + plotH / 2})`);
       leftTitle.textContent = `${varLabel(var1Name)} (${varUnit(var1Name)})`;
       axis.appendChild(leftTitle);
 
