@@ -3520,6 +3520,9 @@
         targetGroup.classList.add('hidden');
       }
 
+      // Coloca la línea de flujo óptimo por encima de las series del gráfico.
+      svg.appendChild(targetGroup);
+
       const envStats = isPressure ? data.pressureStats : isTemperature ? data.temperatureStats : null;
       const envAvg = envStats && Number.isFinite(Number(envStats.avg))
         ? Number(envStats.avg)
