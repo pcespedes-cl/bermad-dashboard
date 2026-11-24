@@ -93,13 +93,20 @@ Así el artifact consulta la API a través de tu backend y la clave sigue oculta
 
 ## Actualizar el despliegue
 
-Cada `git push` a `main` vuelve a desplegar automáticamente:
+La forma recomendada es `deploy.sh`: commitea los archivos trackeados, hace
+push y dispara el deploy en Render por API, esperando hasta que quede `live`.
 
 ```bash
-git add -A
-git commit -m "cambios"
-git push
+./deploy.sh "mensaje del commit"
 ```
+
+Si se omite el mensaje, se usa uno automático con la fecha. Los archivos
+nuevos sin seguimiento no se agregan; si corresponde, usa `git add` antes.
+
+También se puede desplegar a mano: commit, `git push` y luego
+**Manual Deploy → Deploy latest commit** en Render. El auto-deploy por webhook
+puede no estar activo; si quieres restaurarlo, revisa la GitHub App de Render
+y el acceso al repositorio en **Account Settings → GitHub**.
 
 ## Alternativa sin GitHub
 
