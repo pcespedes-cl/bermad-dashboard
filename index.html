@@ -1304,6 +1304,20 @@
     /* ---------- Plan / device / alerts ---------- */
     .plan-card, .device-card, .alerts-card, .meter-card { padding: 17px; }
     .plan-card { color: #ffffff; --text: #ffffff; --muted: #ffffff; --muted-2: #ffffff; }
+    .plan-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; align-items: start; }
+    .plan-main { min-width: 0; }
+    .plan-side { min-width: 0; }
+    .rc-card { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); border-radius: 12px; padding: 12px; color: #ffffff; font-size: 11px; line-height: 1.4; }
+    .rc-card .title { font-size: 13px; font-weight: 700; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
+    .rc-card .dot { width: 8px; height: 8px; border-radius: 50%; background: #39ff8e; }
+    .rc-card .rc-section { margin-bottom: 10px; }
+    .rc-card .rc-section h4 { font-size: 11px; font-weight: 700; margin: 0 0 4px; color: #39ff8e; text-transform: uppercase; letter-spacing: .05em; }
+    .rc-card .formula { font-family: "SF Mono", Menlo, monospace; font-size: 10px; background: rgba(0,0,0,.25); padding: 4px 6px; border-radius: 6px; margin: 3px 0; word-break: break-word; }
+    .rc-card ul { margin: 4px 0 0; padding-left: 14px; font-size: 10.5px; }
+    .rc-card ul li { margin-bottom: 2px; }
+    .rc-card .rc-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 4px; }
+    .rc-card .rc-table th, .rc-card .rc-table td { border: 1px solid rgba(255,255,255,.15); padding: 3px 5px; text-align: left; }
+    .rc-card .rc-table th { background: rgba(255,255,255,.1); font-weight: 700; }
 
     .alerts-card { min-height: 134px; }
 
@@ -2308,6 +2322,8 @@
               <h2>Plan de lixiviación</h2>
               <span class="badge badge-bad" id="planStatus">—</span>
             </div>
+            <div class="plan-body">
+              <div class="plan-main">
             <div class="plan-progress">
               <div class="plan-progress-head">
                 <span>Avance vs meta del ciclo</span>
@@ -2330,6 +2346,47 @@
               La RL real proyecta el volumen medido a los días del ciclo. La RL ejecutada usa el
               caudal de diseño = área × tasa de riego × 24 h × días. La fecha de inicio define el
               avance y los días restantes.
+            </div>
+              </div>
+              <div class="plan-side">
+                <div class="rc-card">
+                  <h3 class="title"><span class="dot"></span>Recuperación de cobre en pilas</h3>
+                  <div class="rc-section">
+                    <h4>1. Balance metalúrgico</h4>
+                    <div class="formula">%R = ((Cu en PLS − Cu en Refino) / Cu Alimentado) × 100</div>
+                    <div class="formula">%R = (1 − Ley Cu Ripios / Ley Cu Cabeza) × 100</div>
+                  </div>
+                  <div class="rc-section">
+                    <h4>2. Óxidos (cinética rápida)</h4>
+                    <div class="formula">R(t) = Rmax · (1 − e^(−k·t))</div>
+                    <ul>
+                      <li>Rmax: recuperación máxima asintótica (×0.85–0.95)</li>
+                      <li>k: constante cinética (riego y ácido)</li>
+                      <li>Razón de solubilidad CuS/CuT = techo inicial</li>
+                      <li>CNA: consumo neto de ácido</li>
+                    </ul>
+                  </div>
+                  <div class="rc-section">
+                    <h4>3. Sulfuros (biolixiviación)</h4>
+                    <div class="formula">R(t) = R1·(1−e^(−k1·t)) + R2·(1−e^(−k2·t))</div>
+                    <ul>
+                      <li>Doble etapa: rápida + lenta (difusión/bacterias)</li>
+                      <li>Eh &gt; 650–700 mV vs SHE (Fe³⁺/Fe²⁺)</li>
+                      <li>Temp. ideal: 25–40 °C, aireación O₂/CO₂</li>
+                    </ul>
+                  </div>
+                  <div class="rc-section">
+                    <h4>4. Comparativa de diseño</h4>
+                    <table class="rc-table">
+                      <tr><th>Parámetro</th><th>Óxidos</th><th>Sulfuros</th></tr>
+                      <tr><td>Ciclo</td><td>45–120 d</td><td>180–500+ d</td></tr>
+                      <tr><td>Recup. típica</td><td>75–90%</td><td>60–80%</td></tr>
+                      <tr><td>Agente</td><td>H₂SO₄</td><td>Fe³⁺ + bacterias</td></tr>
+                      <tr><td>Escalamiento</td><td>0.90–0.95</td><td>0.80–0.90</td></tr>
+                    </table>
+                  </div>
+                </div>
+              </div>
             </div>
           </article>
 
