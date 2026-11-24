@@ -4229,7 +4229,7 @@
       while (walker.nextNode()) nodes.push(walker.currentNode);
       for (const node of nodes) {
         const parent = node.parentElement;
-        if (!parent || parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE') continue;
+        if (!parent || parent.tagName === 'SCRIPT' || parent.tagName === 'STYLE' || parent.closest('#langBtn')) continue;
         if (LANG === 'en') {
           if (node.__es === undefined) node.__es = node.nodeValue;
           const next = translateText(node.__es);
@@ -4239,6 +4239,7 @@
         }
       }
       document.querySelectorAll('[title],[placeholder],[aria-label]').forEach((el) => {
+        if (el.closest('#langBtn')) return;
         el.__i18nOrig = el.__i18nOrig || {};
         for (const attr of ['title', 'placeholder', 'aria-label']) {
           const current = el.getAttribute(attr);
@@ -4257,19 +4258,21 @@
     function updateLangBtn() {
       const button = $('#langBtn');
       if (!button) return;
+      // El botón muestra el idioma al que se cambiará al pulsarlo.
       if (LANG === 'en') {
-        $('#langFlag').textContent = '🇬🇧';
-        $('#langLabel').textContent = 'English';
+        $('#langFlag').textContent = '🇪🇸';
+        $('#langLabel').textContent = 'Español';
         const title = 'Cambiar a español';
         button.title = title;
         button.setAttribute('aria-label', title);
       } else {
-        $('#langFlag').textContent = '🇪🇸';
-        $('#langLabel').textContent = 'Español';
+        $('#langFlag').textContent = '🇬🇧';
+        $('#langLabel').textContent = 'English';
         const title = 'Switch to English';
         button.title = title;
         button.setAttribute('aria-label', title);
       }
+      document.documentElement.lang = LANG;
       const rl = $('#refreshLabel');
       if (rl) rl.textContent = tr('Actualizar');
     }
