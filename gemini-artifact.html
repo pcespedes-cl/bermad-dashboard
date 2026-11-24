@@ -1307,20 +1307,6 @@
     /* ---------- Plan / device / alerts ---------- */
     .plan-card, .device-card, .alerts-card, .meter-card { padding: 17px; }
     .plan-card { color: #ffffff; --text: #ffffff; --muted: #ffffff; --muted-2: #ffffff; }
-    .plan-body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px; align-items: start; }
-    .plan-main { min-width: 0; }
-    .plan-side { min-width: 0; }
-    .rc-card { background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); border-radius: 12px; padding: 12px; color: #ffffff; font-size: 11px; line-height: 1.4; }
-    .rc-card .title { font-size: 13px; font-weight: 700; margin: 0 0 8px; display: flex; align-items: center; gap: 6px; }
-    .rc-card .dot { width: 8px; height: 8px; border-radius: 50%; background: #39ff8e; }
-    .rc-card .rc-section { margin-bottom: 10px; }
-    .rc-card .rc-section h4 { font-size: 11px; font-weight: 700; margin: 0 0 4px; color: #39ff8e; text-transform: uppercase; letter-spacing: .05em; }
-    .rc-card .formula { font-family: "SF Mono", Menlo, monospace; font-size: 10px; background: rgba(0,0,0,.25); padding: 4px 6px; border-radius: 6px; margin: 3px 0; word-break: break-word; }
-    .rc-card ul { margin: 4px 0 0; padding-left: 14px; font-size: 10.5px; }
-    .rc-card ul li { margin-bottom: 2px; }
-    .rc-card .rc-table { width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 4px; }
-    .rc-card .rc-table th, .rc-card .rc-table td { border: 1px solid rgba(255,255,255,.15); padding: 3px 5px; text-align: left; }
-    .rc-card .rc-table th { background: rgba(255,255,255,.1); font-weight: 700; }
 
     .alerts-card { min-height: 134px; }
 
@@ -2348,84 +2334,6 @@
               caudal de diseño = área × tasa de riego × 24 h × días. La fecha de inicio define el
               avance y los días restantes.
             </div>
-          </article>
-
-          <article class="card" style="padding:0;overflow:hidden">
-<div class="rc-card" id="rcCard">
-  <h3 class="title"><span class="dot"></span>Recuperación de cobre en pilas</h3>
-  <div class="tabs">
-    <button class="tab active" data-mode="oxido">Óxidos</button>
-    <button class="tab" data-mode="sulfuro">Sulfuros</button>
-    <button class="tab" data-mode="balance">Balance</button>
-  </div>
-  <div class="mode" data-mode="oxido">
-    <div class="grid">
-      <div class="field"><label>Rmax (%)</label><input data-k="ox_Rmax" type="number" value="85"></div>
-      <div class="field"><label>k (1/día)</label><input data-k="ox_k" type="number" value="0.05"></div>
-      <div class="field"><label>Tiempo t (días)</label><input data-k="ox_t" type="number" value="60"></div>
-      <div class="field"><label>CuS/CuT (%)</label><input data-k="ox_ratio" type="number" value="70"></div>
-      <div class="field"><label>Factor escalamiento</label><input data-k="ox_factor" type="number" value="0.92"></div>
-    </div>
-  </div>
-  <div class="mode" data-mode="sulfuro" style="display:none">
-    <div class="grid">
-      <div class="field"><label>R1 (%)</label><input data-k="su_R1" type="number" value="30"></div>
-      <div class="field"><label>k1</label><input data-k="su_k1" type="number" value="0.08"></div>
-      <div class="field"><label>R2 (%)</label><input data-k="su_R2" type="number" value="50"></div>
-      <div class="field"><label>k2</label><input data-k="su_k2" type="number" value="0.01"></div>
-      <div class="field"><label>Tiempo t (días)</label><input data-k="su_t" type="number" value="240"></div>
-      <div class="field"><label>Factor</label><input data-k="su_factor" type="number" value="0.85"></div>
-    </div>
-  </div>
-  <div class="mode" data-mode="balance" style="display:none">
-    <div class="grid">
-      <div class="field"><label>Cu PLS (t)</label><input data-k="b_pls" type="number" value="45"></div>
-      <div class="field"><label>Cu Refino (t)</label><input data-k="b_ref" type="number" value="5"></div>
-      <div class="field"><label>Cu Alimentado (t)</label><input data-k="b_feed" type="number" value="100"></div>
-    </div>
-  </div>
-  <div class="results">
-    <div class="res"><div class="k">Recuperación</div><div class="v" id="rc_rec">—</div><div class="u">%</div></div>
-    <div class="res"><div class="k">Escalada</div><div class="v" id="rc_esc">—</div><div class="u">%</div></div>
-    <div class="res"><div class="k">Techo</div><div class="v" id="rc_techo">—</div><div class="u">%</div></div>
-    <div class="res"><div class="k">Balance</div><div class="v" id="rc_bal">—</div><div class="u">%</div></div>
-  </div>
-  <div class="status" id="rc_status">—</div>
-</div>
-<script>
-(function(){
-  const card=document.getElementById('rcCard');
-  const $=k=>card.querySelector('[data-k="'+k+'"]');
-  const val=k=>parseFloat($ (k).value)||0;
-  let mode='oxido';
-  card.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
-    mode=t.dataset.mode;
-    card.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x===t));
-    card.querySelectorAll('.mode').forEach(m=>m.style.display=m.dataset.mode===mode?'block':'none');
-    calc();
-  }));
-  function calc(){
-    let rec=0,esc=0,techo=0,bal=0;
-    if(mode==='oxido'){
-      const Rmax=val('ox_Rmax'),k=val('ox_k'),t=val('ox_t'),ratio=val('ox_ratio'),factor=val('ox_factor');
-      rec=Rmax*(1-Math.exp(-k*t)); esc=rec*factor; techo=ratio; if(rec>ratio){rec=ratio;esc=rec*factor;}
-    }else if(mode==='sulfuro'){
-      const R1=val('su_R1'),k1=val('su_k1'),R2=val('su_R2'),k2=val('su_k2'),t=val('su_t'),factor=val('su_factor');
-      rec=R1*(1-Math.exp(-k1*t))+R2*(1-Math.exp(-k2*t)); esc=rec*factor;
-    }else{
-      const pls=val('b_pls'),ref=val('b_ref'),feed=val('b_feed');
-      bal=feed>0?((pls-ref)/feed)*100:0;
-    }
-    card.querySelector('#rc_rec').textContent=rec?rec.toFixed(1):'—';
-    card.querySelector('#rc_esc').textContent=esc?esc.toFixed(1):'—';
-    card.querySelector('#rc_techo').textContent=techo?techo.toFixed(1):'—';
-    card.querySelector('#rc_bal').textContent=bal?bal.toFixed(1):'—';
-    card.querySelector('#rc_status').textContent= mode==='oxido'?'Óxidos: cinética rápida.': mode==='sulfuro'?'Sulfuros: doble etapa.':'Balance metalúrgico.';
-  }
-  card.querySelectorAll('input').forEach(i=>i.addEventListener('input',calc));
-  calc();
-})();
-</script
           </article>
 
           <article class="card alerts-card">
