@@ -1234,6 +1234,12 @@
       font-weight: 500;
     }
 
+    /* Contraste de la grilla y los ejes sobre el fondo claro del gráfico */
+    .chart-grid line { stroke: rgba(0, 0, 0, .16); }
+    .chart-axis .axis-text { fill: #4a5568; }
+    [data-theme="dark"] .chart-grid line { stroke: rgba(255, 255, 255, .18); }
+    [data-theme="dark"] .chart-axis .axis-text { fill: #d1d1d6; }
+
     #chartGridLine { stroke: var(--line); stroke-width: 1; }
     #chartArea { fill: url(#areaGradient); }
     #chartLine { fill: none; stroke: var(--brand); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
